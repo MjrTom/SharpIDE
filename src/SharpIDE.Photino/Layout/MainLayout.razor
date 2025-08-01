@@ -16,9 +16,14 @@
 			<MudButton Variant="Variant.Outlined" Size="Size.Small" Color="Color.Primary" OnClick="@RestoreSolution">Restore</MudButton>
 		</MudButtonGroup>
 		<MudSpacer />
-		<MudButton>
-			<MudIcon Icon="@Icons.Material.Filled.PlayArrow" Size="Size.Medium" Color="Color.Success" />
-		</MudButton>
+		<MudStack Row="true" AlignItems="AlignItems.Center">
+			<MudButton OnClick="@TerminalDrawerToggle">
+				<MudIcon Icon="@Icons.Material.Filled.Terminal" Size="Size.Medium" Color="Color.Default" />
+			</MudButton>
+			<MudButton>
+				<MudIcon Icon="@Icons.Material.Filled.PlayArrow" Size="Size.Medium" Color="Color.Success" />
+			</MudButton>
+		</MudStack>
 	</MudAppBar>
 	<MudDrawer @bind-Open="@_drawerOpen" Width="400px" ClipMode="DrawerClipMode.Always">
 		@if (_solutionFilePath is not null)
@@ -35,16 +40,24 @@
 				<CodeViewer SelectedFile="@_selectedFile" />
 			}
 		</MudContainer>
-		<TerminalOutputDisplay />
 	</MudMainContent>
+	<MudDrawer @bind-Open="@_terminalDrawerOpen" Variant="DrawerVariant.Temporary" Anchor="Anchor.Bottom">
+		<MudText>Terminal</MudText>
+		<TerminalOutputDisplay />
+	</MudDrawer>
 </MudLayout>
 
 @code {
 	bool _drawerOpen = true;
+	bool _terminalDrawerOpen = false;
 
 	void DrawerToggle()
 	{
 		_drawerOpen = !_drawerOpen;
+	}
+	void TerminalDrawerToggle()
+	{
+		_terminalDrawerOpen = !_terminalDrawerOpen;
 	}
 
 	private string? _solutionFilePath;
