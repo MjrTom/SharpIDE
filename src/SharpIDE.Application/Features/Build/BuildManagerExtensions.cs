@@ -9,9 +9,9 @@ public static class BuildManagerExtensions
 		var buildCompleteTcs = new TaskCompletionSource<BuildResult>();
 		buildManager.BeginBuild(buildParameters);
 		var buildSubmission = buildManager.PendBuildRequest(buildRequest);
-		buildSubmission.ExecuteAsync(test =>
+		buildSubmission.ExecuteAsync(submission =>
 		{
-			buildCompleteTcs.SetResult(test.BuildResult!);
+			buildCompleteTcs.SetResult(submission.BuildResult!);
 		}, null);
 		var buildResult = await buildCompleteTcs.Task.ConfigureAwait(false);
 		buildManager.EndBuild();
