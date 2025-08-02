@@ -8,13 +8,15 @@ public static class BuildManagerExtensions
 	/// Convenience method. Submits a lone build request and returns a Task that will complete when results are available.
 	/// </summary>
 	/// <exception cref="InvalidOperationException">Thrown if a build is already in progress.</exception>
-	public static async Task<BuildResult> BuildAsync(this BuildManager buildManager, BuildParameters parameters, BuildRequestData requestData)
+	public static async Task<BuildResult> BuildAsync(this BuildManager buildManager, BuildParameters parameters, BuildRequestData requestData, CancellationToken cancellationToken = default)
 	{
 		BuildResult result;
 		buildManager.BeginBuild(parameters);
 		try
 		{
 			var tcs = new TaskCompletionSource<BuildResult>(TaskCreationOptions.RunContinuationsAsynchronously);
+			await using var cancellationTokenRegistration = cancellationToken.Register(() => buildManager.CancelAllSubmissions());
+			cancellationTokenRegistration.ConfigureAwait(false);
 
 			try
 			{

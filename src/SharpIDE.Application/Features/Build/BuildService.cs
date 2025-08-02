@@ -18,7 +18,7 @@ public class BuildService
 {
 	public event Func<Task> BuildStarted = () => Task.CompletedTask;
 	public ChannelTextWriter BuildTextWriter { get; } = new ChannelTextWriter();
-	public async Task MsBuildSolutionAsync(string solutionFilePath, BuildType buildType = BuildType.Build)
+	public async Task MsBuildSolutionAsync(string solutionFilePath, BuildType buildType = BuildType.Build, CancellationToken cancellationToken = default)
 	{
 		var normalOut = Console.Out;
 		Console.SetOut(BuildTextWriter);
@@ -50,7 +50,7 @@ public class BuildService
 
 		await BuildStarted.Invoke().ConfigureAwait(false);
 		var timer = Stopwatch.StartNew();
-		var buildResult = await BuildManager.DefaultBuildManager.BuildAsync(buildParameters, buildRequest).ConfigureAwait(false);
+		var buildResult = await BuildManager.DefaultBuildManager.BuildAsync(buildParameters, buildRequest, cancellationToken).ConfigureAwait(false);
 		timer.Stop();
 		Console.WriteLine($"Build result: {buildResult.OverallResult} in {timer.ElapsedMilliseconds}ms");
 	}
