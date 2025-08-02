@@ -1,5 +1,9 @@
-﻿@using SharpIDE.Application.Features.SolutionDiscovery
+﻿@using Ardalis.GuardClauses
+@using SharpIDE.Application.Features.Run
+@using SharpIDE.Application.Features.SolutionDiscovery
 @using SharpIDE.Application.Features.SolutionDiscovery.VsPersistence
+
+@inject RunService RunService
 
 @if (SolutionModel is null)
 {
@@ -28,7 +32,7 @@
 </MudTreeView>
 
 <MudMenu PositionAtCursor @ref="_contextMenuRef" Dense="true" Modal="false">
-	<MudMenuItem Icon="@Icons.Material.Filled.PlayArrow" IconColor="Color.Success" Label="Run" />
+	<MudMenuItem Icon="@Icons.Material.Filled.PlayArrow" IconColor="Color.Success" Label="Run" OnClick="@RunProject" />
 	<MudMenuItem Label="Build" />
 	<MudMenuItem Label="Rebuild" />
 	<MudMenuItem Label="Clean" />
@@ -46,6 +50,7 @@
 	public EventCallback<SharpIdeFile> SelectedFileChanged { get; set; }
 
 	private MudMenu _contextMenuRef = null!;
+	private SharpIdeProjectModel? _contextMenuProject;
 
 	private async Task InvokeSelectedFileChanged(SharpIdeFile file)
 	{
@@ -55,8 +60,15 @@
 
 	private async Task OpenProjectContextMenu(MouseEventArgs args, SharpIdeProjectModel project)
 	{
-		Console.WriteLine($"Opening context menu for project: {project.Name}");
+		_contextMenuProject = null;
+		_contextMenuProject = project;
 		await _contextMenuRef.OpenMenuAsync(args);
+	}
+
+	private async Task RunProject()
+	{
+		Guard.Against.Null(_contextMenuProject, nameof(_contextMenuProject));
+		await RunService.RunProject(_contextMenuProject);
 	}
 
 	private RenderFragment GetSolutionFolderFragment(SharpIdeSolutionFolder slnFolder) =>

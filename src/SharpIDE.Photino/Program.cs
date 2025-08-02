@@ -4,6 +4,7 @@ using Microsoft.Extensions.DependencyInjection;
 using MudBlazor.Services;
 using Photino.Blazor;
 using SharpIDE.Application.Features.Build;
+using SharpIDE.Application.Features.Run;
 using SharpIDE.Photino.Models;
 using SharpIDE.Photino.Services;
 
@@ -21,6 +22,7 @@ public class Program
 		appBuilder.Services.AddSingleton<RefreshOpenFileService>();
 		appBuilder.Services.AddSingleton<AppState>();
 		appBuilder.Services.AddSingleton<BuildService>();
+		appBuilder.Services.AddSingleton<RunService>();
 
 		appBuilder.RootComponents.Add<App>("app");
 
