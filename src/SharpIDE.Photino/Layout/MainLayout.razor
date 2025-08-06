@@ -42,25 +42,33 @@
 	</MudAppBar>
 
 	<MudMainContent Style="height: 100%">
-		<MudPaper Height="100%" Class="" Style="overflow:hidden; position:relative;">
-			<MudDrawerContainer Style="height: 100%" Class="mud-height-full">
-				<MudDrawer @bind-Open="@_drawerOpen" Style="height: 100%" Width="400px" Fixed="false" Elevation="0" Variant="@DrawerVariant.Persistent">
-					@if (_solutionFilePath is not null)
-					{
-						<SolutionExplorer @bind-SelectedFile="@_selectedFile" SolutionModel="@_solutionModel"/>
-					}
-				</MudDrawer>
-				<div class="d-flex justify-center align-center mud-height-full">
-					<MudContainer MaxWidth="MaxWidth.False" Class="mt-2">
-						@* @Body *@
+		<MudStack Style="height: 100%" Row="true" Spacing="0" StretchItems="StretchItems.Middle">
+			<MudStack>
+				<MudToggleIconButton Icon="@Icons.Material.Filled.PlayArrow"/>
+				<MudToggleIconButton Icon="@Icons.Material.Filled.PlayArrow"/>
+				<MudToggleIconButton Icon="@Icons.Material.Filled.Terminal"/>
+			</MudStack>
+			<MudPaper Height="100%" Style="overflow:hidden; position:relative;">
+				<MudDrawerContainer Style="height: 100%" Class="mud-height-full">
+					<MudDrawer @bind-Open="@_drawerOpen" Style="height: 100%" Width="400px" Fixed="false" Variant="@DrawerVariant.Persistent">
 						@if (_solutionFilePath is not null)
 						{
-							<CodeViewer SelectedFile="@_selectedFile" />
+							<SolutionExplorer @bind-SelectedFile="@_selectedFile" SolutionModel="@_solutionModel"/>
 						}
-					</MudContainer>
-				</div>
-			</MudDrawerContainer>
-		</MudPaper>
+					</MudDrawer>
+					<div class="d-flex justify-center align-center mud-height-full">
+						<MudContainer MaxWidth="MaxWidth.False" Class="mt-2">
+							@* @Body *@
+							@if (_solutionFilePath is not null)
+							{
+								<CodeViewer SelectedFile="@_selectedFile"/>
+							}
+						</MudContainer>
+					</div>
+				</MudDrawerContainer>
+			</MudPaper>
+			<div>@* fake for StretchItems.Middle *@</div>
+		</MudStack>
 	</MudMainContent>
 	<MudDrawer @bind-Open="@_terminalDrawerOpen" Elevation="2" Variant="DrawerVariant.Temporary" Overlay="false" Anchor="Anchor.Bottom">
 		@if (_solutionFilePath is not null)
