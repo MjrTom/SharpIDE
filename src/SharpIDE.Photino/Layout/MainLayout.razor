@@ -43,11 +43,13 @@
 
 	<MudMainContent Style="height: 100%">
 		<MudStack Style="height: 100%" Row="true" Spacing="0" StretchItems="StretchItems.Middle">
-			<MudStack>
-				<MudToggleIconButton Icon="@Icons.Material.Filled.PlayArrow"/>
-				<MudToggleIconButton Icon="@Icons.Material.Filled.PlayArrow"/>
-				<MudToggleIconButton Icon="@Icons.Material.Filled.Terminal"/>
-			</MudStack>
+			<MudPaper Elevation="6" Style="background-color: var(--mud-palette-appbar-background); z-index: 1200;">
+				<MudStack>
+					<MudToggleIconButton Color="Color.Inherit" Icon="@Icons.Material.Filled.PlayArrow"/>
+					<MudToggleIconButton Color="Color.Inherit" Icon="@Icons.Material.Filled.PlayArrow"/>
+					<MudToggleIconButton Color="Color.Inherit" Icon="@Icons.Material.Filled.Terminal"/>
+				</MudStack>
+			</MudPaper>
 			<MudPaper Height="100%" Style="overflow:hidden; position:relative;">
 				<MudDrawerContainer Style="height: 100%" Class="mud-height-full">
 					<MudDrawer @bind-Open="@_drawerOpen" Style="height: 100%" Width="400px" Fixed="false" Variant="@DrawerVariant.Persistent">
