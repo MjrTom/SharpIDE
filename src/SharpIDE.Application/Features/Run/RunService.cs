@@ -33,13 +33,14 @@ public class RunService
 				RedirectStandardError = true
 			};
 
-			await using var process = new AsyncReadProcess.Process2()
+			var process = new AsyncReadProcess.Process2
 			{
 				StartInfo = processStartInfo
 			};
 
 			process.Start();
 
+			var logsDrained = new TaskCompletionSource();
 			_ = Task.Run(async () =>
 			{
 				await foreach(var log in process.CombinedOutputChannel.Reader.ReadAllAsync())
@@ -47,6 +48,7 @@ public class RunService
 					var logString = System.Text.Encoding.UTF8.GetString(log, 0, log.Length);
 					Console.Write(logString);
 				}
+				logsDrained.TrySetResult();
 			});
 
 			project.Running = true;
@@ -57,6 +59,8 @@ public class RunService
 				process.End();
 				await process.WaitForExitAsync();
 			}
+
+			await logsDrained.Task;
 			project.Running = false;
 			GlobalEvents.InvokeProjectsRunningChanged();
 
