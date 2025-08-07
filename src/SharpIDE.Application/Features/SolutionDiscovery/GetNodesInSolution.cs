@@ -37,15 +37,6 @@ public static class GetNodesInSolution
 			.ToList();
 		return files;
 	}
-
-	public static List<Folder> GetFoldersInProject(string projectPath)
-	{
-		var files = GetFilesInProject(projectPath);
-		var rootDirectoryOfProject = new DirectoryInfo(Path.GetDirectoryName(projectPath)!);
-
-		var grouped = files.GroupBy(s => s.Directory!.FullName);
-		throw new NotImplementedException();
-	}
 }
 
 

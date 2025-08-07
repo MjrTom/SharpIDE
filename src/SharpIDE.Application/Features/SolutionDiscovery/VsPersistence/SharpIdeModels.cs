@@ -1,4 +1,6 @@
-﻿namespace SharpIDE.Application.Features.SolutionDiscovery.VsPersistence;
+﻿using Microsoft.Build.Evaluation;
+
+namespace SharpIDE.Application.Features.SolutionDiscovery.VsPersistence;
 
 public interface ISharpIdeNode;
 
@@ -24,4 +26,5 @@ public class SharpIdeProjectModel : ISharpIdeNode
 	public required List<SharpIdeFolder> Folders { get; set; }
 	public required List<SharpIdeFile> Files { get; set; }
 	public bool Expanded { get; set; }
+	public required Task<Project> MsBuildEvaluationProject { get; set; }
 }

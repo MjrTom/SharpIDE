@@ -1,4 +1,5 @@
 ﻿using System.Diagnostics;
+using SharpIDE.Application.Features.ProjectIntrospection;
 
 namespace SharpIDE.Application.Features.SolutionDiscovery.VsPersistence;
 
@@ -34,8 +35,8 @@ public static class VsPersistenceMapper
 		Name = projectModel.Model.ActualDisplayName,
 		FilePath = projectModel.FullFilePath,
 		Files = TreeMapperV2.GetFiles(projectModel.FullFilePath),
-		Folders = TreeMapperV2.GetSubFolders(projectModel.FullFilePath)
-
+		Folders = TreeMapperV2.GetSubFolders(projectModel.FullFilePath),
+		MsBuildEvaluationProject = Test.GetProject(projectModel.FullFilePath)
 	};
 
 	private static SharpIdeSolutionFolder GetSharpIdeSolutionFolder(IntermediateSlnFolderModel folderModel) => new SharpIdeSolutionFolder()
