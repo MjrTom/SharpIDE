@@ -27,11 +27,11 @@
 			{
 				@if (project.Running)
 				{
-					<MudIcon Icon="@Icons.Material.Filled.Circle" Color="Color.Success"/>
+					<MudIcon Icon="@Icons.Material.Filled.Circle" Class="pa-1" Size="Size.Small" Color="Color.Success"/>
 				}
 				else
 				{
-					<MudIconButton Class="ml-2 pa-1" Color="Color.Inherit" Size="Size.Small" Icon="@Icons.Material.Filled.Close" OnClick="@(() => CloseTab(project))"/>
+					<MudIconButton Color="Color.Inherit" Class="pa-0" Size="Size.Small" Icon="@Icons.Material.Filled.Close" OnClick="@(() => CloseTab(project))"/>
 				}
 			}
 			else throw new InvalidOperationException("Tab ID must be of type SharpIdeProjectModel");
