@@ -52,8 +52,8 @@
 				<MudStack AlignItems="AlignItems.Center" Spacing="1" Style="padding: 4px; height: 100%">
 					<SidebarIconButton Icon="@Icons.Material.Filled.FolderOpen" Text="Explorer" OnClick="@DrawerToggle" Selected="@_drawerOpen" />
 					<MudSpacer />
-					<SidebarIconButton Icon="@Icons.Material.Filled.PlayArrow" Text="Run" OnClick="@SelectRunPanel" Selected="@(_selectedBottomPanel is BottomPanelType.Run)" />
-					<SidebarIconButton Icon="@Icons.Material.Filled.Terminal" Text="Build" OnClick="@SelectBuildPanel" Selected="@(_selectedBottomPanel is BottomPanelType.Build)" />
+					<SidebarIconButton Icon="@Icons.Material.Filled.PlayArrow" Text="Run" OnClick="@ClickRunPanel" Selected="@(_selectedBottomPanel is BottomPanelType.Run)" />
+					<SidebarIconButton Icon="@Icons.Material.Filled.Terminal" Text="Build" OnClick="@ClickBuildPanel" Selected="@(_selectedBottomPanel is BottomPanelType.Build)" />
 				</MudStack>
 			</MudPaper>
 			<div>
@@ -105,9 +105,9 @@
 
 	private string MainContentHeight => _bottomDrawerOpen ? "70%" : "100%";
 
-	private void SelectRunPanel() => SelectBottomPanel(BottomPanelType.Run);
-	private void SelectBuildPanel() => SelectBottomPanel(BottomPanelType.Build);
-	private void SelectBottomPanel(BottomPanelType bottomPanelType)
+	private void ClickRunPanel() => SwitchOrToggleBottomPanel(BottomPanelType.Run);
+	private void ClickBuildPanel() => SwitchOrToggleBottomPanel(BottomPanelType.Build);
+	private void SwitchOrToggleBottomPanel(BottomPanelType bottomPanelType)
 	{
 		if (_selectedBottomPanel == bottomPanelType)
 		{
@@ -120,6 +120,11 @@
 			_bottomDrawerOpen = true;
 		}
 	}
+	private void SelectBottomPanel(BottomPanelType bottomPanelType)
+	{
+		_selectedBottomPanel = bottomPanelType;
+		_bottomDrawerOpen = true;
+	}
 
 	protected override async Task OnInitializedAsync()
 	{
@@ -129,8 +134,7 @@
 
 	private async Task OnStartedRunningProject()
 	{
-		_selectedBottomPanel = BottomPanelType.Run;
-		_bottomDrawerOpen = true;
+		SelectBottomPanel(BottomPanelType.Run);
 		await InvokeAsync(StateHasChanged);
 	}
 
@@ -155,7 +159,7 @@
 	private async Task RestoreSolution() => await MsBuildSolution(BuildType.Restore);
 	private async Task MsBuildSolution(BuildType buildType)
 	{
-		if (AppState.IdeSettings.OpenTerminalOnBuildRebuildRestore) SelectBuildPanel();
+		if (AppState.IdeSettings.OpenTerminalOnBuildRebuildRestore) SelectBottomPanel(BottomPanelType.Build);
 		_cancellationTokenSource = new CancellationTokenSource();
 		await BuildService.MsBuildSolutionAsync(_solutionFilePath!, buildType, _cancellationTokenSource.Token);
 		_cancellationTokenSource = null;
