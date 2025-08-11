@@ -1,6 +1,6 @@
 ﻿using Microsoft.CodeAnalysis.MSBuild;
 
-namespace SharpIDE.Application.Features.SolutionDiscovery;
+namespace SharpIDE.Application.Features.Analysis;
 
 public class Progress : IProgress<ProjectLoadProgress>
 {
