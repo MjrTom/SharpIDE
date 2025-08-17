@@ -124,7 +124,15 @@ public static class RoslynAnalysis
 		return diagnostics.Where(d => d.Severity is not DiagnosticSeverity.Hidden).ToImmutableArray();
 	}
 
-	public static async Task<ImmutableArray<CodeAction>> GetCodeFixesAsync(Document document, Diagnostic diagnostic)
+	public static async Task<ImmutableArray<CodeAction>> GetCodeFixesAsync(Diagnostic diagnostic)
+	{
+		var cancellationToken = CancellationToken.None;
+		var document = _workspace!.CurrentSolution.GetDocument(diagnostic.Location.SourceTree);
+		Guard.Against.Null(document, nameof(document));
+		var result = await GetCodeFixesAsync(document, diagnostic);
+		return result;
+	}
+	private static async Task<ImmutableArray<CodeAction>> GetCodeFixesAsync(Document document, Diagnostic diagnostic)
 	{
 		var cancellationToken = CancellationToken.None;
 		var position = diagnostic.Location.SourceSpan.Start;
