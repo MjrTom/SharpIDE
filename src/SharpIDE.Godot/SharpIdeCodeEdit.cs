@@ -3,9 +3,11 @@ using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.IO;
 using System.Linq;
+using System.Threading;
 using Godot;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.Classification;
+using Microsoft.CodeAnalysis.CodeActions;
 using Microsoft.CodeAnalysis.Text;
 using SharpIDE.Application.Features.Analysis;
 using SharpIDE.Application.Features.SolutionDiscovery;
@@ -28,14 +30,12 @@ public partial class SharpIdeCodeEdit : CodeEdit
 	private PopupMenu _popupMenu = null!;
 
 	private ImmutableArray<(FileLinePositionSpan fileSpan, Diagnostic diagnostic)> _diagnostics = [];
+	private ImmutableArray<CodeAction> _currentCodeActionsInPopup = [];
 	
 	public override void _Ready()
 	{
 		_popupMenu = GetNode<PopupMenu>("CodeFixesMenu");
-		_popupMenu.IdPressed += (id) =>
-		{
-			GD.Print($"Code fix selected: {id}");
-		};
+		_popupMenu.IdPressed += OnCodeFixSelected;
 		this.CodeCompletionRequested += OnCodeCompletionRequested;
 		this.CodeFixesRequested += OnCodeFixesRequested;
 		this.CaretChanged += () =>
@@ -46,6 +46,38 @@ public partial class SharpIdeCodeEdit : CodeEdit
 			GD.Print($"Selection changed to line {_currentLine}, start {_selectionStartCol}, end {_selectionEndCol}");
 		};
 		this.SyntaxHighlighter = _syntaxHighlighter;
+	}
+
+	private void OnCodeFixSelected(long id)
+	{
+		GD.Print($"Code fix selected: {id}");
+		var codeAction = _currentCodeActionsInPopup[(int)id];
+		if (codeAction is null) return;
+		var currentCaretPosition = GetCaretPosition();
+		var vScroll = GetVScroll();
+		_ = Task.Run(async () =>
+		{
+			try
+			{
+				await RoslynAnalysis.ApplyCodeActionAsync(codeAction);
+				var fileContents = await File.ReadAllTextAsync(_currentFile.Path);
+				var syntaxHighlighting = await RoslynAnalysis.GetDocumentSyntaxHighlighting(_currentFile);
+				var diagnostics = await RoslynAnalysis.GetDocumentDiagnostics(_currentFile);
+				Callable.From(() =>
+				{
+					SetText(fileContents);
+					SetSyntaxHighlightingModel(syntaxHighlighting);
+					SetDiagnosticsModel(diagnostics);
+					SetCaretLine(currentCaretPosition.line);
+					SetCaretColumn(currentCaretPosition.col);
+					SetVScroll(vScroll);
+				}).CallDeferred();
+			}
+			catch (Exception ex)
+			{
+				GD.PrintErr($"Error applying code fix: {ex.Message}");
+			}
+		});
 	}
 
 	public async Task SetSharpIdeFile(SharpIdeFile file)
@@ -159,6 +191,7 @@ public partial class SharpIdeCodeEdit : CodeEdit
 					_popupMenu.Clear();
 					foreach (var (index, codeAction) in codeActions.Index())
 					{
+						_currentCodeActionsInPopup = codeActions;
 						_popupMenu.AddItem(codeAction.Title, index);
 						//_popupMenu.SetItemMetadata(menuItem, codeAction);
 					}
@@ -203,7 +236,7 @@ public partial class SharpIdeCodeEdit : CodeEdit
 		});
 	}
 	
-	private (int, int) GetCaretPosition()
+	private (int line, int col) GetCaretPosition()
 	{
 		var caretColumn = GetCaretColumn();
 		var caretLine = GetCaretLine();

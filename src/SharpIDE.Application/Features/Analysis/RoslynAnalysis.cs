@@ -19,7 +19,7 @@ namespace SharpIDE.Application.Features.Analysis;
 
 public static class RoslynAnalysis
 {
-	private static MSBuildWorkspace? _workspace;
+	public static MSBuildWorkspace? _workspace;
 	private static HashSet<CodeFixProvider> _codeFixProviders = [];
 	private static HashSet<CodeRefactoringProvider> _codeRefactoringProviders = [];
 	private static TaskCompletionSource _solutionLoadedTcs = new();
@@ -268,5 +268,24 @@ public static class RoslynAnalysis
 		// 	Console.WriteLine($"Completion: {item.DisplayText}");
 		// }
 		return completions;
+	}
+
+	public static async Task ApplyCodeActionAsync(CodeAction codeAction)
+	{
+		var cancellationToken = CancellationToken.None;
+		var operations = await codeAction.GetOperationsAsync(cancellationToken);
+		foreach (var operation in operations)
+		{
+			operation.Apply(_workspace!, cancellationToken);
+			// if (operation is ApplyChangesOperation applyChangesOperation)
+			// {
+			// 	var newSolution = applyChangesOperation.ChangedSolution;
+			// 	_workspace.TryApplyChanges(newSolution);
+			// }
+			// else
+			// {
+			// 	throw new NotSupportedException($"Unsupported operation type: {operation.GetType().Name}");
+			// }
+		}
 	}
 }
