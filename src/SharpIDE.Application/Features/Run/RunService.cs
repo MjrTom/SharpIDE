@@ -2,6 +2,7 @@
 using System.Threading.Channels;
 using Ardalis.GuardClauses;
 using AsyncReadProcess;
+using SharpIDE.Application.Features.Debugging;
 using SharpIDE.Application.Features.Evaluation;
 using SharpIDE.Application.Features.Events;
 using SharpIDE.Application.Features.SolutionDiscovery.VsPersistence;
@@ -13,6 +14,7 @@ public class RunService
 	private readonly ConcurrentDictionary<SharpIdeProjectModel, SemaphoreSlim> _projectLocks = [];
 	public async Task RunProject(SharpIdeProjectModel project)
 	{
+		var isDebug = true;
 		Guard.Against.Null(project, nameof(project));
 		Guard.Against.NullOrWhiteSpace(project.FilePath, nameof(project.FilePath), "Project file path cannot be null or empty.");
 		await Task.CompletedTask.ConfigureAwait(ConfigureAwaitOptions.ForceYielding);
@@ -28,6 +30,7 @@ public class RunService
 		var launchProfile = launchProfiles.FirstOrDefault();
 		try
 		{
+			// TODO: handle running Blazor projects
 			var processStartInfo = new ProcessStartInfo2
 			{
 				FileName = "dotnet",
@@ -45,6 +48,10 @@ public class RunService
 					processStartInfo.EnvironmentVariables[envVar.Key] = envVar.Value;
 				}
 				if (launchProfile.ApplicationUrl != null) processStartInfo.EnvironmentVariables["ASPNETCORE_URLS"] = launchProfile.ApplicationUrl;
+			}
+			if (isDebug)
+			{
+				processStartInfo.EnvironmentVariables["DOTNET_DefaultDiagnosticPortSuspend"] = "1";
 			}
 
 			var process = new Process2
@@ -71,6 +78,13 @@ public class RunService
 				project.RunningOutputChannel.Writer.Complete();
 				logsDrained.TrySetResult();
 			});
+
+			if (isDebug)
+			{
+				// Attach debugger (which internally uses a DiagnosticClient to resume startup)
+				var debuggingService = new Debugger { Project = project, ProcessId = process.ProcessId };
+				await debuggingService.Attach(project.RunningCancellationTokenSource.Token).ConfigureAwait(false);
+			}
 
 			project.Running = true;
 			project.OpenInRunPanel = true;
