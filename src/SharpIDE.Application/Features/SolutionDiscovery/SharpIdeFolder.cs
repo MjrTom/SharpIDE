@@ -1,4 +1,5 @@
-﻿using System.Diagnostics.CodeAnalysis;
+﻿using System.Collections.Concurrent;
+using System.Diagnostics.CodeAnalysis;
 using SharpIDE.Application.Features.SolutionDiscovery.VsPersistence;
 
 namespace SharpIDE.Application.Features.SolutionDiscovery;
@@ -13,7 +14,7 @@ public class SharpIdeFolder : ISharpIdeNode, IExpandableSharpIdeNode, IChildShar
 	public bool Expanded { get; set; }
 
 	[SetsRequiredMembers]
-	public SharpIdeFolder(DirectoryInfo folderInfo, IExpandableSharpIdeNode parent, HashSet<SharpIdeFile> allFiles)
+	public SharpIdeFolder(DirectoryInfo folderInfo, IExpandableSharpIdeNode parent, ConcurrentBag<SharpIdeFile> allFiles)
 	{
 		Parent = parent;
 		Path = folderInfo.FullName;

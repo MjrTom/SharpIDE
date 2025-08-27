@@ -1,4 +1,5 @@
-﻿using System.Diagnostics.CodeAnalysis;
+﻿using System.Collections.Concurrent;
+using System.Diagnostics.CodeAnalysis;
 using System.Threading.Channels;
 using Microsoft.Build.Evaluation;
 using SharpIDE.Application.Features.Evaluation;
@@ -41,12 +42,14 @@ public class SharpIdeSolutionModel : ISharpIdeNode, IExpandableSharpIdeNode
 	internal SharpIdeSolutionModel(string solutionFilePath, IntermediateSolutionModel intermediateModel)
 	{
 		var solutionName = Path.GetFileName(solutionFilePath);
-		AllProjects = [];
-		AllFiles = [];
+		var allProjects = new ConcurrentBag<SharpIdeProjectModel>();
+		var allFiles = new ConcurrentBag<SharpIdeFile>();
 		Name = solutionName;
 		FilePath = solutionFilePath;
-		Projects = intermediateModel.Projects.Select(s => new SharpIdeProjectModel(s, AllProjects, AllFiles, this)).ToList();
-		Folders = intermediateModel.SolutionFolders.Select(s => new SharpIdeSolutionFolder(s, AllProjects, AllFiles, this)).ToList();
+		Projects = intermediateModel.Projects.Select(s => new SharpIdeProjectModel(s, allProjects, allFiles, this)).ToList();
+		Folders = intermediateModel.SolutionFolders.Select(s => new SharpIdeSolutionFolder(s, allProjects, allFiles, this)).ToList();
+		AllProjects = allProjects.ToHashSet();
+		AllFiles = allFiles.ToHashSet();
 	}
 }
 public class SharpIdeSolutionFolder : ISharpIdeNode, IExpandableSharpIdeNode, IChildSharpIdeNode
@@ -59,7 +62,7 @@ public class SharpIdeSolutionFolder : ISharpIdeNode, IExpandableSharpIdeNode, IC
 	public required IExpandableSharpIdeNode Parent { get; set; }
 
 	[SetsRequiredMembers]
-	internal SharpIdeSolutionFolder(IntermediateSlnFolderModel intermediateModel, HashSet<SharpIdeProjectModel> allProjects, HashSet<SharpIdeFile> allFiles, IExpandableSharpIdeNode parent)
+	internal SharpIdeSolutionFolder(IntermediateSlnFolderModel intermediateModel, ConcurrentBag<SharpIdeProjectModel> allProjects, ConcurrentBag<SharpIdeFile> allFiles, IExpandableSharpIdeNode parent)
 	{
 		Name = intermediateModel.Model.Name;
 		Parent = parent;
@@ -81,7 +84,7 @@ public class SharpIdeProjectModel : ISharpIdeNode, IExpandableSharpIdeNode, IChi
 	public required Task<Project> MsBuildEvaluationProjectTask { get; set; }
 
 	[SetsRequiredMembers]
-	internal SharpIdeProjectModel(IntermediateProjectModel projectModel, HashSet<SharpIdeProjectModel> allProjects, HashSet<SharpIdeFile> allFiles, IExpandableSharpIdeNode parent)
+	internal SharpIdeProjectModel(IntermediateProjectModel projectModel, ConcurrentBag<SharpIdeProjectModel> allProjects, ConcurrentBag<SharpIdeFile> allFiles, IExpandableSharpIdeNode parent)
 	{
 		Parent = parent;
 		Name = projectModel.Model.ActualDisplayName;
