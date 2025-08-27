@@ -2,6 +2,9 @@
 
 public static class GodotGlobalEvents
 {
+    public static event Func<BottomPanelType, Task> BottomPanelTabExternallySelected = _ => Task.CompletedTask;
+    public static void InvokeBottomPanelTabExternallySelected(BottomPanelType type) => BottomPanelTabExternallySelected.Invoke(type);
+    
     public static event Func<BottomPanelType?, Task> BottomPanelTabSelected = _ => Task.CompletedTask;
     public static void InvokeBottomPanelTabSelected(BottomPanelType? type) => BottomPanelTabSelected.Invoke(type);
     

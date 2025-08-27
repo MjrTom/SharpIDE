@@ -47,7 +47,7 @@ public partial class RunMenuItem : HBoxContainer
 
     private async void OnRunButtonPressed()
     {
-		GodotGlobalEvents.InvokeBottomPanelTabSelected(BottomPanelType.Run);
+		GodotGlobalEvents.InvokeBottomPanelTabExternallySelected(BottomPanelType.Run);
         await Singletons.RunService.RunProject(Project).ConfigureAwait(false);
     }
 }

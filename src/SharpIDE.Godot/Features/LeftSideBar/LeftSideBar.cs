@@ -1,3 +1,4 @@
+using Ardalis.GuardClauses;
 using Godot;
 
 namespace SharpIDE.Godot.Features.LeftSideBar;
@@ -20,5 +21,20 @@ public partial class LeftSideBar : Panel
         _problemsButton.Toggled += toggledOn => GodotGlobalEvents.InvokeBottomPanelTabSelected(toggledOn ? BottomPanelType.Problems : null);
         _runButton.Toggled += toggledOn => GodotGlobalEvents.InvokeBottomPanelTabSelected(toggledOn ? BottomPanelType.Run : null);
         _buildButton.Toggled += toggledOn => GodotGlobalEvents.InvokeBottomPanelTabSelected(toggledOn ? BottomPanelType.Build : null);
+        GodotGlobalEvents.BottomPanelTabExternallySelected += OnBottomPanelTabExternallySelected;
+    }
+
+    private async Task OnBottomPanelTabExternallySelected(BottomPanelType arg)
+    {
+        await this.InvokeAsync(() =>
+        {
+            switch (arg)
+            {
+                case BottomPanelType.Run: _runButton.ButtonPressed = true; break;
+                case BottomPanelType.Build: _buildButton.ButtonPressed = true; break;
+                case BottomPanelType.Problems: _problemsButton.ButtonPressed = true; break;
+                default: throw new ArgumentOutOfRangeException(nameof(arg), arg, null);
+            }
+        });
     }
 }
