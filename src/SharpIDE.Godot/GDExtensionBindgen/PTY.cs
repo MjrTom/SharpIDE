@@ -5,6 +5,8 @@ using Godot;
 
 namespace GDExtensionBindgen;
 
+#nullable disable
+
 public class PTY
 {
 	// Engine object used for calling engine methods
