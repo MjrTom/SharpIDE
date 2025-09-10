@@ -104,6 +104,7 @@ layout_mode = 2
 unique_name_in_owner = true
 layout_mode = 2
 size_flags_horizontal = 3
+theme_override_constants/separation = 0
 split_offset = 402
 script = ExtResource("3_0ybuf")
 metadata/_custom_type_script = "uid://kvnhndc3l6ih"
@@ -111,6 +112,7 @@ metadata/_custom_type_script = "uid://kvnhndc3l6ih"
 [node name="HSplitContainer" type="HSplitContainer" parent="VBoxContainer/HBoxContainer/InvertedVSplitContainer"]
 layout_mode = 2
 size_flags_horizontal = 3
+theme_override_constants/separation = 0
 split_offset = 400
 
 [node name="SolutionExplorerPanel" type="Panel" parent="VBoxContainer/HBoxContainer/InvertedVSplitContainer/HSplitContainer"]
