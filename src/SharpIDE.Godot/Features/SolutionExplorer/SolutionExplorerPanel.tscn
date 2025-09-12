@@ -1,0 +1,23 @@
+[gd_scene load_steps=4 format=3 uid="uid://cy1bb32g7j7dr"]
+
+[ext_resource type="Script" uid="uid://bai53k7ongbxw" path="res://Features/SolutionExplorer/SolutionExplorerPanel.cs" id="1_gjy0r"]
+[ext_resource type="Texture2D" uid="uid://do0edciarrnp0" path="res://Features/SolutionExplorer/Resources/CsharpFile.svg" id="2_8ymw0"]
+[ext_resource type="Texture2D" uid="uid://xc8srvqwlwng" path="res://Features/SolutionExplorer/Resources/FolderIcon.svg" id="3_r1qfc"]
+
+[node name="SolutionExplorerPanel" type="Panel"]
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("1_gjy0r")
+CsharpFileIcon = ExtResource("2_8ymw0")
+FolderIcon = ExtResource("3_r1qfc")
+
+[node name="Tree" type="Tree" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
