@@ -28,7 +28,7 @@ public partial class ProblemsPanel : Control
                 GD.Print($"ProblemsPanel: Solution changed to {s?.Name ?? "null"}");
                 _projects.Clear();
                 _projects.AddRange(s!.AllProjects);
-            });
+            }).AddTo(this);
         BindToTree(_projects);
     }
 
@@ -49,9 +49,9 @@ public partial class ProblemsPanel : Control
                     NotifyCollectionChangedAction.Add => CreateDiagnosticTreeItem(_tree, treeItem, e),
                     NotifyCollectionChangedAction.Remove => FreeDiagnosticTreeItem(e),
                     _ => Task.CompletedTask
-                }));
+                })).AddTo(this);
             Observable.EveryValueChanged(x, s => s.Diagnostics.Count)
-                .Subscribe(s => treeItem.Visible = s is not 0);
+                .Subscribe(s => treeItem.Visible = s is not 0).AddTo(this);
             return treeItem;
         });
         view.ViewChanged += OnViewChanged;
