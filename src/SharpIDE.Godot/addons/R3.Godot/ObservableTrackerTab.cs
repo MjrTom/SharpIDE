@@ -28,7 +28,7 @@ public partial class ObservableTrackerTab : VBoxContainer
 
     public void NotifyOnSessionStart()
     {
-        debuggerPlugin!.SetEnableStates(sessionId, enableTracking, enableStackTrace);
+        debuggerPlugin?.SetEnableStates(sessionId, enableTracking, enableStackTrace);
     }
 
     public override void _Ready()
