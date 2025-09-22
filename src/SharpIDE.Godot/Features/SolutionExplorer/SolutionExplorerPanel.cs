@@ -24,6 +24,7 @@ public partial class SolutionExplorerPanel : MarginContainer
 	{
 		_tree = GetNode<Tree>("Tree");
 		_tree.ItemMouseSelected += TreeOnItemMouseSelected;
+		GodotGlobalEvents.FileExternallySelected += OnFileExternallySelected;
 	}
 
 	private void TreeOnItemMouseSelected(Vector2 mousePosition, long mouseButtonIndex)
@@ -35,6 +36,40 @@ public partial class SolutionExplorerPanel : MarginContainer
 		var sharpIdeFile = sharpIdeFileContainer.File;
 		Guard.Against.Null(sharpIdeFile, nameof(sharpIdeFile));
 		GodotGlobalEvents.InvokeFileSelected(sharpIdeFile);
+	}
+	
+	private async Task OnFileExternallySelected(SharpIdeFile file)
+	{
+		GodotGlobalEvents.InvokeFileSelected(file);
+		var item = FindItemRecursive(_tree.GetRoot(), file);
+		if (item is not null)
+		{
+			await this.InvokeAsync(() =>
+			{
+				item.UncollapseTree();
+				_tree.SetSelected(item, 0);
+				_tree.ScrollToItem(item, true);
+			});
+		}
+	}
+	
+	private static TreeItem? FindItemRecursive(TreeItem item, SharpIdeFile file)
+	{
+		var metadata = item.GetMetadata(0);
+		if (metadata.As<SharpIdeFileGodotContainer?>()?.File == file)
+			return item;
+
+		var child = item.GetFirstChild();
+		while (child != null)
+		{
+			var result = FindItemRecursive(child, file);
+			if (result != null)
+				return result;
+
+			child = child.GetNext();
+		}
+
+		return null;
 	}
 
 	public void RepopulateTree()

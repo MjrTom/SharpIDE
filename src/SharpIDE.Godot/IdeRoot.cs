@@ -41,11 +41,11 @@ public partial class IdeRoot : Control
 		
 		_runMenuButton.Pressed += OnRunMenuButtonPressed;
 		GodotGlobalEvents.FileSelected += OnSolutionExplorerPanelOnFileSelected;
-		_fileDialog.FileSelected += OnFileSelected;
+		_fileDialog.FileSelected += OnSlnFileSelected;
 		_openSlnButton.Pressed += () => _fileDialog.Visible = true;
 		_buildSlnButton.Pressed += OnBuildSlnButtonPressed;
 		GodotGlobalEvents.BottomPanelVisibilityChangeRequested += async show => await this.InvokeAsync(() => _invertedVSplitContainer.InvertedSetCollapsed(!show));
-		OnFileSelected(@"C:\Users\Matthew\Documents\Git\BlazorCodeBreaker\BlazorCodeBreaker.slnx");
+		OnSlnFileSelected(@"C:\Users\Matthew\Documents\Git\BlazorCodeBreaker\BlazorCodeBreaker.slnx");
 	}
 
 	private void OnRunMenuButtonPressed()
@@ -67,7 +67,7 @@ public partial class IdeRoot : Control
 		await _sharpIdeCodeEdit.SetSharpIdeFile(file);
 	}
 
-	private void OnFileSelected(string path)
+	private void OnSlnFileSelected(string path)
 	{
 		_ = Task.GodotRun(async () =>
 		{
@@ -94,9 +94,9 @@ public partial class IdeRoot : Control
 				_runMenuButton.Disabled = false;
 			});
 				
-			var infraProject = solutionModel.AllProjects.Single(s => s.Name == "Infrastructure");
-			var diFile = infraProject.Files.Single(s => s.Name == "DependencyInjection.cs");
-			await this.InvokeDeferredAsync(async () => await _sharpIdeCodeEdit.SetSharpIdeFile(diFile));
+			var infraProject = solutionModel.AllProjects.Single(s => s.Name == "WebUi");
+			var diFile = infraProject.Folders.Single(s => s.Name == "Pages").Files.Single(s => s.Name == "TestPage.razor");
+			await this.InvokeDeferredAsync(() => GodotGlobalEvents.InvokeFileExternallySelected(diFile));
 				
 			//var runnableProject = solutionModel.AllProjects.First(s => s.IsRunnable);
 			//await this.InvokeAsync(() => _runPanel.NewRunStarted(runnableProject));

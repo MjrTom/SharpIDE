@@ -16,6 +16,10 @@ public static class GodotGlobalEvents
     
     public static event Func<SharpIdeFile, Task> FileSelected = _ => Task.CompletedTask;
     public static void InvokeFileSelected(SharpIdeFile file) => FileSelected.InvokeParallelFireAndForget(file);
+    public static event Func<SharpIdeFile, Task> FileExternallySelected = _ => Task.CompletedTask;
+    public static void InvokeFileExternallySelected(SharpIdeFile file) => FileExternallySelected.InvokeParallelFireAndForget(file);
+    public static async Task InvokeFileExternallySelectedAndWait(SharpIdeFile file) => await FileExternallySelected.InvokeParallelAsync(file);
+    
 }
 
 public enum BottomPanelType

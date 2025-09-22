@@ -57,7 +57,7 @@ public partial class SharpIdeCodeEdit : CodeEdit
 		if (executionStopInfo.FilePath != _currentFile.Path)
 		{
 			var file = Solution.AllFiles.Single(s => s.Path == executionStopInfo.FilePath);
-			await this.InvokeAsync(async () => await SetSharpIdeFile(file));
+			await GodotGlobalEvents.InvokeFileExternallySelectedAndWait(file);
 		}
 		var lineInt = executionStopInfo.Line - 1; // Debugging is 1-indexed, Godot is 0-indexed
 		Guard.Against.Negative(lineInt, nameof(lineInt));
@@ -165,11 +165,15 @@ public partial class SharpIdeCodeEdit : CodeEdit
 	// TODO: Ensure not running on UI thread
 	public async Task SetSharpIdeFile(SharpIdeFile file)
 	{
+		await Task.CompletedTask.ConfigureAwait(ConfigureAwaitOptions.ForceYielding); // get off the UI thread
 		_currentFile = file;
 		var fileContents = await File.ReadAllTextAsync(_currentFile.Path);
-		_fileChangingSuppressBreakpointToggleEvent = true;
-		SetText(fileContents);
-		_fileChangingSuppressBreakpointToggleEvent = false;
+		await this.InvokeAsync(() =>
+		{
+			_fileChangingSuppressBreakpointToggleEvent = true;
+			SetText(fileContents);
+			_fileChangingSuppressBreakpointToggleEvent = false;
+		});
 		var syntaxHighlighting = RoslynAnalysis.GetDocumentSyntaxHighlighting(_currentFile);
 		var razorSyntaxHighlighting = RoslynAnalysis.GetRazorDocumentSyntaxHighlighting(_currentFile);
 		var diagnostics = RoslynAnalysis.GetDocumentDiagnostics(_currentFile);

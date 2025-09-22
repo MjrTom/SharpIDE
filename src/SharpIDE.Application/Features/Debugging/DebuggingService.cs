@@ -183,7 +183,7 @@ public class DebuggingService
 				}
 			}
 		}
-		catch (Exception ex)
+		catch (Exception)
 		{
 			throw;
 		}
