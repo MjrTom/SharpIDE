@@ -140,6 +140,16 @@ public partial class SharpIdeCodeEdit : CodeEdit
 			}).CallDeferred();
 		});
 	}
+	
+	public void SetFileLinePosition(SharpIdeFileLinePosition fileLinePosition)
+	{
+		var line = fileLinePosition.Line - 1;
+		var column = fileLinePosition.Column - 1;
+		SetCaretLine(line);
+		SetCaretColumn(column);
+		CenterViewportToCaret();
+		GrabFocus();
+	}
 
 	// TODO: Ensure not running on UI thread
 	public async Task SetSharpIdeFile(SharpIdeFile file)

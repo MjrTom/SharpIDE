@@ -31,6 +31,7 @@ public static class AsyncEventExtensions
 {
 	public static void InvokeParallelFireAndForget(this MulticastDelegate @event) => FireAndForget(() => @event.InvokeParallelAsync());
 	public static void InvokeParallelFireAndForget<T>(this MulticastDelegate @event, T arg) => FireAndForget(() => @event.InvokeParallelAsync(arg));
+	public static void InvokeParallelFireAndForget<T, U>(this MulticastDelegate @event, T arg, U arg2) => FireAndForget(() => @event.InvokeParallelAsync(arg, arg2));
 
 	private static async void FireAndForget(Func<Task> action)
 	{
@@ -52,6 +53,10 @@ public static class AsyncEventExtensions
 	public static Task InvokeParallelAsync<T>(this MulticastDelegate @event, T arg)
 	{
 		return InvokeDelegatesAsync(@event.GetInvocationList(), del => ((Func<T, Task>)del)(arg));
+	}
+	public static Task InvokeParallelAsync<T, U>(this MulticastDelegate @event, T arg, U arg2)
+	{
+		return InvokeDelegatesAsync(@event.GetInvocationList(), del => ((Func<T, U, Task>)del)(arg, arg2));
 	}
 
 	private static async Task InvokeDelegatesAsync(IEnumerable<Delegate> invocationList, Func<Delegate, Task> delegateExecutorDelegate)

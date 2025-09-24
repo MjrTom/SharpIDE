@@ -28,7 +28,8 @@ public static class SearchService
 						results.Add(new SearchResult
 						{
 							File = file,
-							LineNumber = index + 1,
+							Line = index + 1,
+							StartColumn = line.IndexOf(searchTerm, StringComparison.OrdinalIgnoreCase) + 1,
 							LineText = line.Trim()
 						});
 					}

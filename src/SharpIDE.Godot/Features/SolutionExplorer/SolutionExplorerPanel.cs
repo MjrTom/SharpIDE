@@ -1,5 +1,6 @@
 using Ardalis.GuardClauses;
 using Godot;
+using SharpIDE.Application.Features.Analysis;
 using SharpIDE.Application.Features.SolutionDiscovery;
 using SharpIDE.Application.Features.SolutionDiscovery.VsPersistence;
 
@@ -38,10 +39,10 @@ public partial class SolutionExplorerPanel : MarginContainer
 		GodotGlobalEvents.InvokeFileSelected(sharpIdeFile);
 	}
 	
-	private async Task OnFileExternallySelected(SharpIdeFile file)
+	private async Task OnFileExternallySelected(SharpIdeFile file, SharpIdeFileLinePosition? fileLinePosition)
 	{
 		await Task.CompletedTask.ConfigureAwait(ConfigureAwaitOptions.ForceYielding);
-		var task = GodotGlobalEvents.InvokeFileSelectedAndWait(file);
+		var task = GodotGlobalEvents.InvokeFileSelectedAndWait(file, fileLinePosition);
 		var item = FindItemRecursive(_tree.GetRoot(), file);
 		if (item is not null)
 		{

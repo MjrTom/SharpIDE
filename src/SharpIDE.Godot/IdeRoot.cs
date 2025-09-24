@@ -66,9 +66,9 @@ public partial class IdeRoot : Control
 		await Singletons.BuildService.MsBuildSolutionAsync(_solutionExplorerPanel.SolutionModel.FilePath);
 	}
 
-	private async Task OnSolutionExplorerPanelOnFileSelected(SharpIdeFile file)
+	private async Task OnSolutionExplorerPanelOnFileSelected(SharpIdeFile file, SharpIdeFileLinePosition? fileLinePosition)
 	{
-		await _codeEditorPanel.SetSharpIdeFile(file);
+		await _codeEditorPanel.SetSharpIdeFile(file, fileLinePosition);
 	}
 
 	private void OnSlnFileSelected(string path)

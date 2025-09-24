@@ -1,4 +1,5 @@
 using Godot;
+using SharpIDE.Application.Features.Analysis;
 using SharpIDE.Application.Features.Search;
 
 namespace SharpIDE.Godot.Features.Search;
@@ -25,7 +26,8 @@ public partial class SearchResultComponent : MarginContainer
 
     private void OnButtonPressed()
     {
-        GodotGlobalEvents.InvokeFileExternallySelected(Result.File);
+        var fileLinePosition = new SharpIdeFileLinePosition { Line = Result.Line, Column = Result.StartColumn };
+        GodotGlobalEvents.InvokeFileExternallySelected(Result.File, fileLinePosition);
         ParentSearchWindow.Hide();
     }
 
@@ -34,6 +36,6 @@ public partial class SearchResultComponent : MarginContainer
         if (result is null) return;
         _matchingLineLabel.Text = result.LineText;
         _fileNameLabel.Text = result.File.Name;
-        _lineNumberLabel.Text = result.LineNumber.ToString();
+        _lineNumberLabel.Text = result.Line.ToString();
     }
 }

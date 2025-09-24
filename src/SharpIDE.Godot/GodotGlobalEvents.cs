@@ -1,4 +1,5 @@
-﻿using SharpIDE.Application.Features.Events;
+﻿using SharpIDE.Application.Features.Analysis;
+using SharpIDE.Application.Features.Events;
 using SharpIDE.Application.Features.SolutionDiscovery;
 
 namespace SharpIDE.Godot;
@@ -14,11 +15,11 @@ public static class GodotGlobalEvents
     public static event Func<bool, Task> BottomPanelVisibilityChangeRequested = _ => Task.CompletedTask;
     public static void InvokeBottomPanelVisibilityChangeRequested(bool show) => BottomPanelVisibilityChangeRequested.InvokeParallelFireAndForget(show);
     
-    public static event Func<SharpIdeFile, Task> FileSelected = _ => Task.CompletedTask;
+    public static event Func<SharpIdeFile, SharpIdeFileLinePosition?, Task> FileSelected = (_, _) => Task.CompletedTask;
     public static void InvokeFileSelected(SharpIdeFile file) => FileSelected.InvokeParallelFireAndForget(file);
-    public static async Task InvokeFileSelectedAndWait(SharpIdeFile file) => await FileSelected.InvokeParallelAsync(file);
-    public static event Func<SharpIdeFile, Task> FileExternallySelected = _ => Task.CompletedTask;
-    public static void InvokeFileExternallySelected(SharpIdeFile file) => FileExternallySelected.InvokeParallelFireAndForget(file);
+    public static async Task InvokeFileSelectedAndWait(SharpIdeFile file, SharpIdeFileLinePosition? fileLinePosition) => await FileSelected.InvokeParallelAsync(file, fileLinePosition);
+    public static event Func<SharpIdeFile, SharpIdeFileLinePosition?, Task> FileExternallySelected = (_, _) => Task.CompletedTask;
+    public static void InvokeFileExternallySelected(SharpIdeFile file, SharpIdeFileLinePosition? fileLinePosition = null) => FileExternallySelected.InvokeParallelFireAndForget(file, fileLinePosition);
     public static async Task InvokeFileExternallySelectedAndWait(SharpIdeFile file) => await FileExternallySelected.InvokeParallelAsync(file);
     
 }

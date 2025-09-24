@@ -1,5 +1,6 @@
 using Ardalis.GuardClauses;
 using Godot;
+using SharpIDE.Application.Features.Analysis;
 using SharpIDE.Application.Features.Debugging;
 using SharpIDE.Application.Features.Events;
 using SharpIDE.Application.Features.SolutionDiscovery;
@@ -48,15 +49,18 @@ public partial class CodeEditorPanel : MarginContainer
         tab.QueueFree();
     }
 
-    public async Task SetSharpIdeFile(SharpIdeFile file)
+    public async Task SetSharpIdeFile(SharpIdeFile file, SharpIdeFileLinePosition? fileLinePosition)
     {
 		await Task.CompletedTask.ConfigureAwait(ConfigureAwaitOptions.ForceYielding);
         var existingTab = await this.InvokeAsync(() => _tabContainer.GetChildren().OfType<SharpIdeCodeEdit>().FirstOrDefault(t => t.SharpIdeFile == file));
         if (existingTab is not null)
         {
             var existingTabIndex = existingTab.GetIndex();
-            if (existingTabIndex == _tabContainer.CurrentTab) return;
-            await this.InvokeAsync(() => _tabContainer.CurrentTab = existingTabIndex);
+            await this.InvokeAsync(() =>
+            {
+                _tabContainer.CurrentTab = existingTabIndex;
+                if (fileLinePosition is not null) existingTab.SetFileLinePosition(fileLinePosition.Value);
+            });
             return;
         }
         var newTab = _sharpIdeCodeEditScene.Instantiate<SharpIdeCodeEdit>();
@@ -71,6 +75,7 @@ public partial class CodeEditorPanel : MarginContainer
             _tabContainer.CurrentTab = newTabIndex;
         });
         await newTab.SetSharpIdeFile(file);
+        if (fileLinePosition is not null) await this.InvokeAsync(() => newTab.SetFileLinePosition(fileLinePosition.Value));
     }
     
     private async Task OnDebuggerExecutionStopped(ExecutionStopInfo executionStopInfo)
