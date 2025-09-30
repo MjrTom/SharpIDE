@@ -124,6 +124,6 @@ public partial class ProblemsPanel : Control
         var file = projectModel.Files
             .Concat(projectModel.Folders.SelectMany(f => f.GetAllFiles()))
             .Single(s => s.Path == diagnostic.Location.SourceTree?.GetMappedLineSpan(diagnostic.Location.SourceSpan).Path);
-        GodotGlobalEvents.InvokeFileExternallySelected(file);
+        GodotGlobalEvents.Instance.InvokeFileExternallySelected(file);
     }
 }

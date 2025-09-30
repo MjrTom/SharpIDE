@@ -30,6 +30,12 @@ public partial class IdeRoot : Control
 	
 	private readonly PackedScene _runMenuItemScene = ResourceLoader.Load<PackedScene>("res://Features/Run/RunMenuItem.tscn");
 	private TaskCompletionSource _nodeReadyTcs = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+
+	public override void _EnterTree()
+	{
+		GodotGlobalEvents.Instance = new GodotGlobalEvents();
+	}
+
 	public override void _Ready()
 	{
 		_openSlnButton = GetNode<Button>("%OpenSlnButton");
@@ -45,11 +51,11 @@ public partial class IdeRoot : Control
 		_bottomPanelManager = GetNode<BottomPanelManager>("%BottomPanel");
 		
 		_runMenuButton.Pressed += OnRunMenuButtonPressed;
-		GodotGlobalEvents.FileSelected += OnSolutionExplorerPanelOnFileSelected;
+		GodotGlobalEvents.Instance.FileSelected += OnSolutionExplorerPanelOnFileSelected;
 		_fileDialog.FileSelected += SetSlnFilePath;
 		_openSlnButton.Pressed += () => IdeWindow.PickSolution();
 		_buildSlnButton.Pressed += OnBuildSlnButtonPressed;
-		GodotGlobalEvents.BottomPanelVisibilityChangeRequested += async show => await this.InvokeAsync(() => _invertedVSplitContainer.InvertedSetCollapsed(!show));
+		GodotGlobalEvents.Instance.BottomPanelVisibilityChangeRequested += async show => await this.InvokeAsync(() => _invertedVSplitContainer.InvertedSetCollapsed(!show));
 		_nodeReadyTcs.SetResult();
 		//OnSlnFileSelected(@"C:\Users\Matthew\Documents\Git\BlazorCodeBreaker\BlazorCodeBreaker.slnx");
 	}
@@ -64,7 +70,7 @@ public partial class IdeRoot : Control
 
 	private async void OnBuildSlnButtonPressed()
 	{
-		GodotGlobalEvents.InvokeBottomPanelTabExternallySelected(BottomPanelType.Build);
+		GodotGlobalEvents.Instance.InvokeBottomPanelTabExternallySelected(BottomPanelType.Build);
 		await Singletons.BuildService.MsBuildSolutionAsync(_solutionExplorerPanel.SolutionModel.FilePath);
 	}
 
@@ -89,7 +95,7 @@ public partial class IdeRoot : Control
 			
 			var infraProject = solutionModel.AllProjects.SingleOrDefault(s => s.Name == "WebUi");
 			var diFile = infraProject?.Folders.Single(s => s.Name == "Pages").Files.Single(s => s.Name == "TestPage.razor");
-			if (diFile != null) await this.InvokeDeferredAsync(() => GodotGlobalEvents.InvokeFileExternallySelected(diFile));
+			if (diFile != null) await this.InvokeDeferredAsync(() => GodotGlobalEvents.Instance.InvokeFileExternallySelected(diFile));
 				
 			var tasks = solutionModel.AllProjects.Select(p => p.MsBuildEvaluationProjectTask).ToList();
 			await Task.WhenAll(tasks).ConfigureAwait(false);

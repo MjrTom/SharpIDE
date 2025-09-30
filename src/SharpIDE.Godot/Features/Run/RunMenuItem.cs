@@ -51,13 +51,13 @@ public partial class RunMenuItem : HBoxContainer
 
     private async void OnRunButtonPressed()
     {
-		GodotGlobalEvents.InvokeBottomPanelTabExternallySelected(BottomPanelType.Run);
+		GodotGlobalEvents.Instance.InvokeBottomPanelTabExternallySelected(BottomPanelType.Run);
         await Singletons.RunService.RunProject(Project).ConfigureAwait(false);
     }
     
     private async void OnDebugButtonPressed()
     {
-        GodotGlobalEvents.InvokeBottomPanelTabExternallySelected(BottomPanelType.Debug);
+        GodotGlobalEvents.Instance.InvokeBottomPanelTabExternallySelected(BottomPanelType.Debug);
         await Singletons.RunService.RunProject(Project, true).ConfigureAwait(false);
     }
 }

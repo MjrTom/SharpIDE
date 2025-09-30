@@ -42,12 +42,12 @@ public partial class BottomPanelManager : Panel
             { BottomPanelType.IdeDiagnostics, _ideDiagnosticsPanel }
         };
 
-        GodotGlobalEvents.BottomPanelTabSelected += OnBottomPanelTabSelected;
+        GodotGlobalEvents.Instance.BottomPanelTabSelected += OnBottomPanelTabSelected;
     }
 
     public override void _ExitTree()
     {
-        GodotGlobalEvents.BottomPanelTabSelected -= OnBottomPanelTabSelected;
+        GodotGlobalEvents.Instance.BottomPanelTabSelected -= OnBottomPanelTabSelected;
     }
 
     private async Task OnBottomPanelTabSelected(BottomPanelType? type)
@@ -56,11 +56,11 @@ public partial class BottomPanelManager : Panel
         {
             if (type == null)
             {
-                GodotGlobalEvents.InvokeBottomPanelVisibilityChangeRequested(false);
+                GodotGlobalEvents.Instance.InvokeBottomPanelVisibilityChangeRequested(false);
             }
             else
             {
-                GodotGlobalEvents.InvokeBottomPanelVisibilityChangeRequested(true);
+                GodotGlobalEvents.Instance.InvokeBottomPanelVisibilityChangeRequested(true);
             }
             foreach (var kvp in _panelTypeMap)
             {
