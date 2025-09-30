@@ -36,14 +36,15 @@ public partial class IdeWindow : Control
         }
         else
         {
-            var window = GetNode<Window>("Window");
-            window.Title = "Open Solution";
-            window.AddChild(_slnPicker);
-            window.Popup();
-            window.CloseRequested += () =>
+            var popupWindow = GetNode<Window>("Window");
+            var windowSize = GetWindow().GetSize();
+            popupWindow.Size = windowSize with { X = windowSize.X / 2, Y = windowSize.Y / 2 };
+            popupWindow.Title = "Open Solution";
+            popupWindow.AddChild(_slnPicker);
+            popupWindow.Popup();
+            popupWindow.CloseRequested += () =>
             {
-                window.Hide();
-                //window.QueueFreeChildren();
+                popupWindow.Hide();
             };
         }
         _ = Task.GodotRun(async () =>

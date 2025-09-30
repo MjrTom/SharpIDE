@@ -2,6 +2,7 @@ using Godot;
 
 namespace SharpIDE.Godot.Features.SlnPicker;
 
+// This is a bit of a mess intertwined with the optional popup window
 public partial class SlnPicker : Control
 {
     private FileDialog _fileDialog = null!;
@@ -17,16 +18,10 @@ public partial class SlnPicker : Control
         var windowParent = GetParentOrNull<Window>();
         _fileDialog.FileSelected += path =>
         {
-            _tcs.SetResult(path);
             windowParent?.Hide();
+            _tcs.SetResult(path);
         };
-        _fileDialog.Canceled += () => _tcs.SetResult(null);
-        windowParent?.CloseRequested += OnCloseRequested;
-    }
-
-    private void OnCloseRequested()
-    {
-        _tcs.SetResult(null);
+        windowParent?.CloseRequested += () => _tcs.SetResult(null);
     }
 
     public async Task<string?> GetSelectedSolutionPath()
