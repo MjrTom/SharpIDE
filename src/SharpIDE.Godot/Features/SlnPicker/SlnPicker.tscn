@@ -1,0 +1,21 @@
+[gd_scene load_steps=2 format=3 uid="uid://cwvhbsd1mdl2x"]
+
+[ext_resource type="Script" uid="uid://bjvwb6jg6jpsi" path="res://Features/SlnPicker/SlnPicker.cs" id="1_ciq0g"]
+
+[node name="SlnPicker" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("1_ciq0g")
+
+[node name="FileDialog" type="FileDialog" parent="."]
+unique_name_in_owner = true
+oversampling_override = 1.0
+title = "Open a File"
+file_mode = 0
+access = 2
+filters = PackedStringArray("*.sln,*.slnx;Solution Files")
+use_native_dialog = true

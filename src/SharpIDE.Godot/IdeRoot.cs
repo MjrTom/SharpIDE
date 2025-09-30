@@ -15,6 +15,7 @@ namespace SharpIDE.Godot;
 
 public partial class IdeRoot : Control
 {
+	public IdeWindow IdeWindow { get; set; } = null!;
 	private Button _openSlnButton = null!;
 	private Button _buildSlnButton = null!;
 	private FileDialog _fileDialog = null!;
@@ -28,11 +29,9 @@ public partial class IdeRoot : Control
 	private BottomPanelManager _bottomPanelManager = null!;
 	
 	private readonly PackedScene _runMenuItemScene = ResourceLoader.Load<PackedScene>("res://Features/Run/RunMenuItem.tscn");
+	private TaskCompletionSource _nodeReadyTcs = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
 	public override void _Ready()
 	{
-		MSBuildLocator.RegisterDefaults();
-		GodotServiceDefaults.AddServiceDefaults();
-		
 		_openSlnButton = GetNode<Button>("%OpenSlnButton");
 		_buildSlnButton = GetNode<Button>("%BuildSlnButton");
 		_runMenuPopup = GetNode<Popup>("%RunMenuPopup");
@@ -47,11 +46,12 @@ public partial class IdeRoot : Control
 		
 		_runMenuButton.Pressed += OnRunMenuButtonPressed;
 		GodotGlobalEvents.FileSelected += OnSolutionExplorerPanelOnFileSelected;
-		_fileDialog.FileSelected += OnSlnFileSelected;
-		_openSlnButton.Pressed += () => _fileDialog.Visible = true;
+		_fileDialog.FileSelected += SetSlnFilePath;
+		_openSlnButton.Pressed += IdeWindow.PickSolution;
 		_buildSlnButton.Pressed += OnBuildSlnButtonPressed;
 		GodotGlobalEvents.BottomPanelVisibilityChangeRequested += async show => await this.InvokeAsync(() => _invertedVSplitContainer.InvertedSetCollapsed(!show));
-		OnSlnFileSelected(@"C:\Users\Matthew\Documents\Git\BlazorCodeBreaker\BlazorCodeBreaker.slnx");
+		_nodeReadyTcs.SetResult();
+		//OnSlnFileSelected(@"C:\Users\Matthew\Documents\Git\BlazorCodeBreaker\BlazorCodeBreaker.slnx");
 	}
 
 	private void OnRunMenuButtonPressed()
@@ -73,18 +73,23 @@ public partial class IdeRoot : Control
 		await _codeEditorPanel.SetSharpIdeFile(file, fileLinePosition);
 	}
 
-	private void OnSlnFileSelected(string path)
+	public void SetSlnFilePath(string path)
 	{
 		_ = Task.GodotRun(async () =>
 		{
 			GD.Print($"Selected: {path}");
 			var solutionModel = await VsPersistenceMapper.GetSolutionModel(path);
+			await _nodeReadyTcs.Task;
 			_solutionExplorerPanel.SolutionModel = solutionModel;
 			_codeEditorPanel.Solution = solutionModel;
 			_bottomPanelManager.Solution = solutionModel;
 			_searchWindow.Solution = solutionModel;
 			Callable.From(_solutionExplorerPanel.RepopulateTree).CallDeferred();
 			RoslynAnalysis.StartSolutionAnalysis(solutionModel);
+			
+			var infraProject = solutionModel.AllProjects.SingleOrDefault(s => s.Name == "WebUi");
+			var diFile = infraProject?.Folders.Single(s => s.Name == "Pages").Files.Single(s => s.Name == "TestPage.razor");
+			if (diFile != null) await this.InvokeDeferredAsync(() => GodotGlobalEvents.InvokeFileExternallySelected(diFile));
 				
 			var tasks = solutionModel.AllProjects.Select(p => p.MsBuildEvaluationProjectTask).ToList();
 			await Task.WhenAll(tasks).ConfigureAwait(false);
@@ -100,13 +105,6 @@ public partial class IdeRoot : Control
 				}
 				_runMenuButton.Disabled = false;
 			});
-				
-			var infraProject = solutionModel.AllProjects.Single(s => s.Name == "WebUi");
-			var diFile = infraProject.Folders.Single(s => s.Name == "Pages").Files.Single(s => s.Name == "TestPage.razor");
-			await this.InvokeDeferredAsync(() => GodotGlobalEvents.InvokeFileExternallySelected(diFile));
-				
-			//var runnableProject = solutionModel.AllProjects.First(s => s.IsRunnable);
-			//await this.InvokeAsync(() => _runPanel.NewRunStarted(runnableProject));
 		});
 	}
 	

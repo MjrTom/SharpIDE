@@ -36,6 +36,13 @@ public static class NodeExtensions
 {
     extension(Node node)
     {
+        public void ClearChildren()
+        {
+            foreach (var child in node.GetChildren())
+            {
+                child.QueueFree();
+            }
+        }
         public Task<T> InvokeAsync<T>(Func<T> workItem)
         {
             var taskCompletionSource = new TaskCompletionSource<T>(TaskCreationOptions.RunContinuationsAsynchronously);

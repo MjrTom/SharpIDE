@@ -45,6 +45,11 @@ public partial class BottomPanelManager : Panel
         GodotGlobalEvents.BottomPanelTabSelected += OnBottomPanelTabSelected;
     }
 
+    public override void _ExitTree()
+    {
+        GodotGlobalEvents.BottomPanelTabSelected -= OnBottomPanelTabSelected;
+    }
+
     private async Task OnBottomPanelTabSelected(BottomPanelType? type)
     {
         await this.InvokeAsync(() =>
