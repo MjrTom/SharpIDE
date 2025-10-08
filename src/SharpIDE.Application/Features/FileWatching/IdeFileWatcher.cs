@@ -1,5 +1,6 @@
 ﻿using FileWatcherEx;
 using Microsoft.Extensions.FileSystemGlobbing;
+using SharpIDE.Application.Features.Events;
 using SharpIDE.Application.Features.SolutionDiscovery.VsPersistence;
 
 namespace SharpIDE.Application.Features.FileWatching;
@@ -62,7 +63,6 @@ public sealed class IdeFileWatcher : IDisposable
 
 	private void HandleRenamed(string? oldFullPath, string fullPath)
 	{
-
 		Console.WriteLine($"FileSystemWatcher: Renamed - {oldFullPath}, {fullPath}");
 	}
 
@@ -83,8 +83,8 @@ public sealed class IdeFileWatcher : IDisposable
 	private void HandleChanged(string fullPath)
 	{
 		if (Path.HasExtension(fullPath) is false) return;
-		// TODO: Handle updating the content of open files in editors
 		Console.WriteLine($"FileSystemWatcher: Changed - {fullPath}");
+		GlobalEvents.Instance.FileSystemWatcherInternal.FileChanged.InvokeParallelFireAndForget(fullPath);
 	}
 
 	public void Dispose()

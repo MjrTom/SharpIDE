@@ -48,6 +48,12 @@ public partial class SharpIdeCodeEdit : CodeEdit
 		SymbolLookup += OnSymbolLookup;
 	}
 
+	public override void _ExitTree()
+	{
+		_currentFile.FileContentsChangedExternallyFromDisk.Unsubscribe(OnFileChangedExternallyFromDisk);
+		_currentFile.FileContentsChangedExternally.Unsubscribe(OnFileChangedExternallyInMemory);
+	}
+
 	private void OnBreakpointToggled(long line)
 	{
 		if (_fileChangingSuppressBreakpointToggleEvent) return;
@@ -118,8 +124,7 @@ public partial class SharpIdeCodeEdit : CodeEdit
 		GD.Print($"Code fix selected: {id}");
 		var codeAction = _currentCodeActionsInPopup[(int)id];
 		if (codeAction is null) return;
-		var currentCaretPosition = GetCaretPosition();
-		var vScroll = GetVScroll();
+		
 		_ = Task.GodotRun(async () =>
 		{
 			var affectedFiles = await RoslynAnalysis.ApplyCodeActionAsync(codeAction);
@@ -127,25 +132,35 @@ public partial class SharpIdeCodeEdit : CodeEdit
 			foreach (var (affectedFile, updatedText) in affectedFiles)
 			{
 				await Singletons.FileManager.UpdateInMemoryIfOpenAndSaveAsync(affectedFile, updatedText);
+				affectedFile.FileContentsChangedExternally.InvokeParallelFireAndForget();
 			}
-			var fileContents = await Singletons.FileManager.GetFileTextAsync(_currentFile);
-			var syntaxHighlighting = await RoslynAnalysis.GetDocumentSyntaxHighlighting(_currentFile);
-			var razorSyntaxHighlighting = await RoslynAnalysis.GetRazorDocumentSyntaxHighlighting(_currentFile);
-			var diagnostics = await RoslynAnalysis.GetDocumentDiagnostics(_currentFile);
-			Callable.From(() =>
-			{
-				BeginComplexOperation();
-				SetText(fileContents);
-				SetSyntaxHighlightingModel(syntaxHighlighting, razorSyntaxHighlighting);
-				SetDiagnosticsModel(diagnostics);
-				SetCaretLine(currentCaretPosition.line);
-				SetCaretColumn(currentCaretPosition.col);
-				SetVScroll(vScroll);
-				EndComplexOperation();
-			}).CallDeferred();
 		});
 	}
-	
+
+	private async Task OnFileChangedExternallyInMemory()
+	{
+		var fileContents = await Singletons.FileManager.GetFileTextAsync(_currentFile);
+		var syntaxHighlighting = RoslynAnalysis.GetDocumentSyntaxHighlighting(_currentFile);
+		var razorSyntaxHighlighting = RoslynAnalysis.GetRazorDocumentSyntaxHighlighting(_currentFile);
+		var diagnostics = RoslynAnalysis.GetDocumentDiagnostics(_currentFile);
+		var slnDiagnostics = RoslynAnalysis.UpdateSolutionDiagnostics();
+		await Task.WhenAll(syntaxHighlighting, razorSyntaxHighlighting, diagnostics);
+		Callable.From(() =>
+		{
+			var currentCaretPosition = GetCaretPosition();
+			var vScroll = GetVScroll();
+			BeginComplexOperation();
+			SetText(fileContents);
+			SetSyntaxHighlightingModel(syntaxHighlighting.Result, razorSyntaxHighlighting.Result);
+			SetDiagnosticsModel(diagnostics.Result);
+			SetCaretLine(currentCaretPosition.line);
+			SetCaretColumn(currentCaretPosition.col);
+			SetVScroll(vScroll);
+			EndComplexOperation();
+		}).CallDeferred();
+		await slnDiagnostics;
+	}
+
 	public void SetFileLinePosition(SharpIdeFileLinePosition fileLinePosition)
 	{
 		var line = fileLinePosition.Line - 1;
@@ -162,6 +177,8 @@ public partial class SharpIdeCodeEdit : CodeEdit
 		await Task.CompletedTask.ConfigureAwait(ConfigureAwaitOptions.ForceYielding); // get off the UI thread
 		_currentFile = file;
 		var readFileTask = Singletons.FileManager.GetFileTextAsync(file);
+		_currentFile.FileContentsChangedExternally.Subscribe(OnFileChangedExternallyInMemory);
+		_currentFile.FileContentsChangedExternallyFromDisk.Subscribe(OnFileChangedExternallyFromDisk);
 		
 		var syntaxHighlighting = RoslynAnalysis.GetDocumentSyntaxHighlighting(_currentFile);
 		var razorSyntaxHighlighting = RoslynAnalysis.GetRazorDocumentSyntaxHighlighting(_currentFile);
@@ -176,7 +193,13 @@ public partial class SharpIdeCodeEdit : CodeEdit
 		SetSyntaxHighlightingModel(await syntaxHighlighting, await razorSyntaxHighlighting);
 		SetDiagnosticsModel(await diagnostics);
 	}
-	
+
+	private async Task OnFileChangedExternallyFromDisk()
+	{
+		await Singletons.FileManager.ReloadFileFromDisk(_currentFile);
+		await OnFileChangedExternallyInMemory();
+	}
+
 	public void UnderlineRange(int line, int caretStartCol, int caretEndCol, Color color, float thickness = 1.5f)
 	{
 		if (line < 0 || line >= GetLineCount())

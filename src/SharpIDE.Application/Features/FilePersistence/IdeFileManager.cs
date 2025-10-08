@@ -37,6 +37,20 @@ public class IdeFileManager
 		}
 	}
 
+	public async Task ReloadFileFromDisk(SharpIdeFile file)
+	{
+		if (!_openFiles.ContainsKey(file)) throw new InvalidOperationException("File is not open in memory.");
+
+		var newTextTaskLazy = new Lazy<Task<string>>(() => File.ReadAllTextAsync(file.Path));
+		_openFiles[file] = newTextTaskLazy;
+		var textTask = newTextTaskLazy.Value;
+		if (file.IsRoslynWorkspaceFile)
+		{
+			var text = await textTask;
+			RoslynAnalysis.UpdateDocument(file, text);
+		}
+	}
+
 	public async Task SaveFileAsync(SharpIdeFile file)
 	{
 		if (!_openFiles.ContainsKey(file)) throw new InvalidOperationException("File is not open in memory.");

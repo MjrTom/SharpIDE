@@ -1,6 +1,7 @@
 ﻿using System.Collections.Concurrent;
 using System.Diagnostics.CodeAnalysis;
 using R3;
+using SharpIDE.Application.Features.Events;
 using SharpIDE.Application.Features.SolutionDiscovery.VsPersistence;
 
 namespace SharpIDE.Application.Features.SolutionDiscovery;
@@ -15,6 +16,8 @@ public class SharpIdeFile : ISharpIdeNode, IChildSharpIdeNode
 	public bool IsCsharpFile => Path.EndsWith(".cs", StringComparison.OrdinalIgnoreCase);
 	public bool IsRoslynWorkspaceFile => IsCsharpFile || IsRazorFile || IsCshtmlFile;
 	public required ReactiveProperty<bool> IsDirty { get; set; }
+	public EventWrapper<Task> FileContentsChangedExternallyFromDisk { get; } = new(() => Task.CompletedTask);
+	public EventWrapper<Task> FileContentsChangedExternally { get; } = new(() => Task.CompletedTask);
 
 	[SetsRequiredMembers]
 	internal SharpIdeFile(string fullPath, string name, IExpandableSharpIdeNode parent, ConcurrentBag<SharpIdeFile> allFiles)

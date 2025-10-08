@@ -12,5 +12,6 @@ public static class Singletons
     public static BuildService BuildService { get; set; } = null!;
     public static IdeFileWatcher FileWatcher { get; set; } = null!;
     public static IdeFileManager FileManager { get; set; } = null!;
+    public static IdeFileChangeHandler FileChangeHandler { get; set; } = null!;
     public static AppState AppState { get; set; } = null!;
 }
