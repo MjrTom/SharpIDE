@@ -33,48 +33,114 @@ public partial class SolutionExplorerPanel : MarginContainer
 	{
 		var selected = _tree.GetSelected();
 		if (selected is null) return;
-		var sharpIdeFileContainer = selected.GetTypedMetadata<RefCountedContainer<SharpIdeFile>?>(0);
-		if (sharpIdeFileContainer is null) return;
-		var sharpIdeFile = sharpIdeFileContainer.Item;
-		Guard.Against.Null(sharpIdeFile, nameof(sharpIdeFile));
 		
-		if (mouseButtonIndex is (int)MouseButtonMask.Left)
+		var mouseButtonMask = (MouseButtonMask)mouseButtonIndex;
+
+		var genericMetadata = selected.GetMetadata(0).As<RefCounted?>();
+		switch (mouseButtonMask, genericMetadata)
 		{
-			GodotGlobalEvents.Instance.FileSelected.InvokeParallelFireAndForget(sharpIdeFile, null);
+			case (MouseButtonMask.Left, RefCountedContainer<SharpIdeFile> fileContainer): GodotGlobalEvents.Instance.FileSelected.InvokeParallelFireAndForget(fileContainer.Item, null); break;
+			case (MouseButtonMask.Right, RefCountedContainer<SharpIdeFile> fileContainer): OpenContextMenuFile(fileContainer.Item); break;
+			case (MouseButtonMask.Left, RefCountedContainer<SharpIdeProjectModel>): break;
+			case (MouseButtonMask.Right, RefCountedContainer<SharpIdeProjectModel> projectContainer): OpenContextMenuProject(projectContainer.Item); break;
+			case (MouseButtonMask.Left, RefCountedContainer<SharpIdeFolder>): break;
+			case (MouseButtonMask.Right, RefCountedContainer<SharpIdeFolder> folderContainer): OpenContextMenuFolder(folderContainer.Item); break;
+			case (MouseButtonMask.Left, RefCountedContainer<SharpIdeSolutionFolder>): break;
+			default: break;
 		}
-		else if (mouseButtonIndex is (int)MouseButtonMask.Right)
+	}
+	
+	private void OpenContextMenuFolder(SharpIdeFolder folder)
+	{
+		var menu = new PopupMenu();
+		AddChild(menu);
+		menu.AddItem("Reveal in File Explorer", 0);
+		menu.PopupHide += () => menu.QueueFree();
+		menu.IdPressed += id =>
 		{
-			var menu = new PopupMenu();
-			AddChild(menu);
-			menu.AddItem("Open", 0);
-			menu.AddItem("Reveal in File Explorer", 1);
-			menu.AddSeparator();
-			menu.AddItem("Copy Full Path", 2);
-			menu.PopupHide += () =>
+			if (id is 0)
 			{
-				GD.Print("QueueFree menu");
-				menu.QueueFree();
-			};
-			menu.IdPressed += id =>
-			{
-				if (id is 0)
-				{
-					GodotGlobalEvents.Instance.FileSelected.InvokeParallelFireAndForget(sharpIdeFile, null);
-				}
-				else if (id is 1)
-				{
-					OS.ShellOpen(Path.GetDirectoryName(sharpIdeFile.Path)!);
-				}
-				else if (id is 2)
-				{
-					DisplayServer.ClipboardSet(sharpIdeFile.Path);
-				}
-			};
+				// Reveal in File Explorer
+				OS.ShellOpen(folder.Path);
+			}
+		};
 			
-			var globalMousePosition = GetGlobalMousePosition();
-			menu.Position = new Vector2I((int)globalMousePosition.X, (int)globalMousePosition.Y);
-			menu.Popup();
-		}
+		var globalMousePosition = GetGlobalMousePosition();
+		menu.Position = new Vector2I((int)globalMousePosition.X, (int)globalMousePosition.Y);
+		menu.Popup();
+	}
+	
+	private void OpenContextMenuProject(SharpIdeProjectModel project)
+	{
+		var menu = new PopupMenu();
+		AddChild(menu);
+		menu.AddItem("Run", 0);
+		menu.AddSeparator();
+		menu.AddItem("Build", 1);
+		menu.AddItem("Rebuild", 2);
+		menu.AddItem("Clean", 3);
+		menu.PopupHide += () =>
+		{
+			GD.Print("QueueFree menu");
+			menu.QueueFree();
+		};
+		menu.IdPressed += id =>
+		{
+			if (id is 0)
+			{
+				// Run project
+			}
+			if (id is 1)
+			{
+				// Build project
+			}
+			else if (id is 2)
+			{
+				// Rebuild project
+			}
+			else if (id is 3)
+			{
+				// Clean project
+			}
+		};
+			
+		var globalMousePosition = GetGlobalMousePosition();
+		menu.Position = new Vector2I((int)globalMousePosition.X, (int)globalMousePosition.Y);
+		menu.Popup();
+	}
+	
+	private void OpenContextMenuFile(SharpIdeFile file)
+	{
+		var menu = new PopupMenu();
+		AddChild(menu);
+		menu.AddItem("Open", 0);
+		menu.AddItem("Reveal in File Explorer", 1);
+		menu.AddSeparator();
+		menu.AddItem("Copy Full Path", 2);
+		menu.PopupHide += () =>
+		{
+			GD.Print("QueueFree menu");
+			menu.QueueFree();
+		};
+		menu.IdPressed += id =>
+		{
+			if (id is 0)
+			{
+				GodotGlobalEvents.Instance.FileSelected.InvokeParallelFireAndForget(file, null);
+			}
+			else if (id is 1)
+			{
+				OS.ShellOpen(Path.GetDirectoryName(file.Path)!);
+			}
+			else if (id is 2)
+			{
+				DisplayServer.ClipboardSet(file.Path);
+			}
+		};
+			
+		var globalMousePosition = GetGlobalMousePosition();
+		menu.Position = new Vector2I((int)globalMousePosition.X, (int)globalMousePosition.Y);
+		menu.Popup();
 	}
 	
 	private async Task OnFileExternallySelected(SharpIdeFile file, SharpIdeFileLinePosition? fileLinePosition)
