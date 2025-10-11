@@ -23,6 +23,9 @@ public static class SymbolInfoComponents
         label.Pop();
         label.AddText(" ");
         label.AddStaticModifier(methodSymbol);
+        label.AddVirtualModifier(methodSymbol);
+        label.AddAbstractModifier(methodSymbol);
+        label.AddOverrideModifier(methodSymbol);
         label.AddMethodReturnType(methodSymbol);
         label.AddText(" ");
         label.AddMethodName(methodSymbol);
@@ -58,6 +61,39 @@ public static class SymbolInfoComponents
         {
             label.PushColor(CachedColors.KeywordBlue);
             label.AddText("static");
+            label.Pop();
+            label.AddText(" ");
+        }
+    }
+    
+    private static void AddOverrideModifier(this RichTextLabel label, IMethodSymbol methodSymbol)
+    {
+        if (methodSymbol.IsOverride)
+        {
+            label.PushColor(CachedColors.KeywordBlue);
+            label.AddText("override");
+            label.Pop();
+            label.AddText(" ");
+        }
+    }
+    
+    private static void AddAbstractModifier(this RichTextLabel label, IMethodSymbol methodSymbol)
+    {
+        if (methodSymbol.IsAbstract)
+        {
+            label.PushColor(CachedColors.KeywordBlue);
+            label.AddText("abstract");
+            label.Pop();
+            label.AddText(" ");
+        }
+    }
+    
+    private static void AddVirtualModifier(this RichTextLabel label, IMethodSymbol methodSymbol)
+    {
+        if (methodSymbol.IsVirtual)
+        {
+            label.PushColor(CachedColors.KeywordBlue);
+            label.AddText("virtual");
             label.Pop();
             label.AddText(" ");
         }
@@ -355,6 +391,7 @@ public static class SymbolInfoComponents
     private static readonly Color HrColour = new Color("4d4d4d");
     private static void AddDocs(this RichTextLabel label, IMethodSymbol methodSymbol)
     {
+        if (methodSymbol.IsOverride) methodSymbol = methodSymbol.OverriddenMethod!;
         var xmlDocs = methodSymbol.GetDocumentationCommentXml();
         if (string.IsNullOrWhiteSpace(xmlDocs)) return;
         label.AddHr(100, 1, HrColour);
