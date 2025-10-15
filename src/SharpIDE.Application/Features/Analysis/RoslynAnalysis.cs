@@ -293,16 +293,13 @@ public static class RoslynAnalysis
 		return diagnostics;
 	}
 
-	public static async Task<ImmutableArray<(FileLinePositionSpan fileSpan, Diagnostic diagnostic)>> GetDocumentDiagnostics(SharpIdeFile fileModel)
+	public static async Task<ImmutableArray<(FileLinePositionSpan fileSpan, Diagnostic diagnostic)>> GetDocumentDiagnostics(SharpIdeFile fileModel, CancellationToken cancellationToken = default)
 	{
+		if (fileModel.IsRoslynWorkspaceFile is false) return [];
 		using var _ = SharpIdeOtel.Source.StartActivity($"{nameof(RoslynAnalysis)}.{nameof(GetDocumentDiagnostics)}");
 		await _solutionLoadedTcs.Task;
-		var cancellationToken = CancellationToken.None;
-		var project = _workspace!.CurrentSolution.Projects.Single(s => s.FilePath == ((IChildSharpIdeNode)fileModel).GetNearestProjectNode()!.FilePath);
-		var document = project.Documents.SingleOrDefault(s => s.FilePath == fileModel.Path);
 
-		if (document is null) return [];
-		//var document = _workspace!.CurrentSolution.GetDocument(fileModel.Path);
+		var document = await GetDocumentForSharpIdeFile(fileModel);
 		Guard.Against.Null(document, nameof(document));
 
 		var semanticModel = await document.GetSemanticModelAsync(cancellationToken);
@@ -314,12 +311,31 @@ public static class RoslynAnalysis
 		return result;
 	}
 
+	private static async Task<Document> GetDocumentForSharpIdeFile(SharpIdeFile fileModel)
+	{
+		var project = _workspace!.CurrentSolution.Projects.Single(s => s.FilePath == ((IChildSharpIdeNode)fileModel).GetNearestProjectNode()!.FilePath);
+		var document = fileModel.IsCsharpFile ? project.Documents.SingleOrDefault(s => s.FilePath == fileModel.Path)
+				: await GetRazorSourceGeneratedDocumentInProjectForSharpIdeFile(project, fileModel);
+		Guard.Against.Null(document, nameof(document));
+		return document;
+	}
+
+	private static async Task<SourceGeneratedDocument> GetRazorSourceGeneratedDocumentInProjectForSharpIdeFile(Project project, SharpIdeFile fileModel, CancellationToken cancellationToken = default)
+	{
+		var razorDocument = project.AdditionalDocuments.Single(s => s.FilePath == fileModel.Path);
+
+		var razorProjectSnapshot = _snapshotManager!.GetSnapshot(project);
+		var documentSnapshot = razorProjectSnapshot.GetDocument(razorDocument);
+
+		var generatedDocument = await razorProjectSnapshot.GetRequiredGeneratedDocumentAsync(documentSnapshot, cancellationToken);
+		return generatedDocument;
+	}
+
 	public record SharpIdeRazorMappedClassifiedSpan(SharpIdeRazorSourceSpan SourceSpanInRazor, string CsharpClassificationType);
-	public static async Task<IEnumerable<SharpIdeRazorClassifiedSpan>> GetRazorDocumentSyntaxHighlighting(SharpIdeFile fileModel)
+	public static async Task<IEnumerable<SharpIdeRazorClassifiedSpan>> GetRazorDocumentSyntaxHighlighting(SharpIdeFile fileModel, CancellationToken cancellationToken = default)
 	{
 		using var _ = SharpIdeOtel.Source.StartActivity($"{nameof(RoslynAnalysis)}.{nameof(GetRazorDocumentSyntaxHighlighting)}");
 		await _solutionLoadedTcs.Task;
-		var cancellationToken = CancellationToken.None;
 		var timer = Stopwatch.StartNew();
 		var sharpIdeProjectModel = ((IChildSharpIdeNode) fileModel).GetNearestProjectNode()!;
 		var project = _workspace!.CurrentSolution.Projects.Single(s => s.FilePath == sharpIdeProjectModel!.FilePath);
@@ -423,11 +439,10 @@ public static class RoslynAnalysis
 		return sharpIdeRazorSpans;
 	}
 
-	public static async Task<IEnumerable<(FileLinePositionSpan fileSpan, ClassifiedSpan classifiedSpan)>> GetDocumentSyntaxHighlighting(SharpIdeFile fileModel)
+	public static async Task<IEnumerable<(FileLinePositionSpan fileSpan, ClassifiedSpan classifiedSpan)>> GetDocumentSyntaxHighlighting(SharpIdeFile fileModel, CancellationToken cancellationToken = default)
 	{
 		using var _ = SharpIdeOtel.Source.StartActivity($"{nameof(RoslynAnalysis)}.{nameof(GetDocumentSyntaxHighlighting)}");
 		await _solutionLoadedTcs.Task;
-		var cancellationToken = CancellationToken.None;
 		var project = _workspace!.CurrentSolution.Projects.Single(s => s.FilePath == ((IChildSharpIdeNode)fileModel).GetNearestProjectNode()!.FilePath);
 		if (fileModel.Name.EndsWith(".cs", StringComparison.OrdinalIgnoreCase) is false)
 		{
@@ -458,17 +473,16 @@ public static class RoslynAnalysis
 		return completions;
 	}
 
-	public static async Task<ImmutableArray<CodeAction>> GetCodeFixesForDocumentAtPosition(SharpIdeFile fileModel, LinePosition linePosition)
+	public static async Task<ImmutableArray<CodeAction>> GetCodeFixesForDocumentAtPosition(SharpIdeFile fileModel, LinePosition linePosition, CancellationToken cancellationToken = default)
 	{
 		using var _ = SharpIdeOtel.Source.StartActivity($"{nameof(RoslynAnalysis)}.{nameof(GetCodeFixesForDocumentAtPosition)}");
-		var cancellationToken = CancellationToken.None;
-		var project = _workspace!.CurrentSolution.Projects.Single(s => s.FilePath == ((IChildSharpIdeNode)fileModel).GetNearestProjectNode()!.FilePath);
-		var document = project.Documents.Single(s => s.FilePath == fileModel.Path);
+		await _solutionLoadedTcs.Task;
+		var document = await GetDocumentForSharpIdeFile(fileModel);
 		Guard.Against.Null(document, nameof(document));
 		var semanticModel = await document.GetSemanticModelAsync(cancellationToken);
 		Guard.Against.Null(semanticModel, nameof(semanticModel));
 
-		var diagnostics = semanticModel.GetDiagnostics();
+		var diagnostics = semanticModel.GetDiagnostics(cancellationToken: cancellationToken); // TODO: pass span
 		var sourceText = await document.GetTextAsync(cancellationToken);
 		var position = sourceText.Lines.GetPosition(linePosition);
 		var diagnosticsAtPosition = diagnostics
@@ -478,29 +492,18 @@ public static class RoslynAnalysis
 		ImmutableArray<CodeAction> codeActions = [];
 		foreach (var diagnostic in diagnosticsAtPosition)
 		{
-			var actions = await GetCodeFixesAsync(document, diagnostic);
+			var actions = await GetCodeFixesAsync(document, diagnostic, cancellationToken);
 			codeActions = codeActions.AddRange(actions);
 		}
 
 		var linePositionSpan = new LinePositionSpan(linePosition, new LinePosition(linePosition.Line, linePosition.Character + 1));
 		var selectedSpan = sourceText.Lines.GetTextSpan(linePositionSpan);
-		codeActions = codeActions.AddRange(await GetCodeRefactoringsAsync(document, selectedSpan));
+		codeActions = codeActions.AddRange(await GetCodeRefactoringsAsync(document, selectedSpan, cancellationToken));
 		return codeActions;
 	}
 
-	public static async Task<ImmutableArray<(FileLinePositionSpan fileSpan, CodeAction codeAction)>> GetCodeFixesAsync(Diagnostic diagnostic)
+	private static async Task<ImmutableArray<CodeAction>> GetCodeFixesAsync(Document document, Diagnostic diagnostic, CancellationToken cancellationToken = default)
 	{
-		var cancellationToken = CancellationToken.None;
-		var document = _workspace!.CurrentSolution.GetDocument(diagnostic.Location.SourceTree);
-		Guard.Against.Null(document, nameof(document));
-		var codeActions = await GetCodeFixesAsync(document, diagnostic);
-		var result = codeActions.Select(action => (diagnostic.Location.SourceTree!.GetMappedLineSpan(diagnostic.Location.SourceSpan), action))
-			.ToImmutableArray();
-		return result;
-	}
-	private static async Task<ImmutableArray<CodeAction>> GetCodeFixesAsync(Document document, Diagnostic diagnostic)
-	{
-		var cancellationToken = CancellationToken.None;
 		var codeActions = new List<CodeAction>();
 		var context = new CodeFixContext(
 			document,
@@ -520,9 +523,8 @@ public static class RoslynAnalysis
 		return codeActions.ToImmutableArray();
 	}
 
-	private static async Task<ImmutableArray<CodeAction>> GetCodeRefactoringsAsync(Document document, TextSpan span)
+	private static async Task<ImmutableArray<CodeAction>> GetCodeRefactoringsAsync(Document document, TextSpan span, CancellationToken cancellationToken = default)
 	{
-		var cancellationToken = CancellationToken.None;
 		var codeActions = new List<CodeAction>();
 		var refactorContext = new CodeRefactoringContext(
 			document,
@@ -539,9 +541,8 @@ public static class RoslynAnalysis
 		return codeActions.ToImmutableArray();
 	}
 
-	private static async Task<CompletionList> GetCompletionsAsync(Document document, LinePosition linePosition)
+	private static async Task<CompletionList> GetCompletionsAsync(Document document, LinePosition linePosition, CancellationToken cancellationToken = default)
 	{
-		var cancellationToken = CancellationToken.None;
 		var completionService = CompletionService.GetService(document);
 		if (completionService is null) throw new InvalidOperationException("Completion service is not available for the document.");
 
