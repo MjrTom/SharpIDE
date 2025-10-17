@@ -13,7 +13,7 @@ public partial class ThreadsVariablesSubTab : Control
 	private VBoxContainer _stackFramesVboxContainer = null!;
 	private VBoxContainer _variablesVboxContainer = null!;
 	public SharpIdeProjectModel Project { get; set; } = null!;
-	private ThreadModel? _selectedThread = null!; // null when not at a stop point
+	// private ThreadModel? _selectedThread = null!; // null when not at a stop point
 
 	public override void _Ready()
 	{

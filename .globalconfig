@@ -17,4 +17,7 @@ dotnet_diagnostic.VSTHRD200.severity = none
 # VSTHRD003: Avoid awaiting foreign Tasks
 dotnet_diagnostic.VSTHRD003.severity = none
 
-dotnet_diagnostic.VSTHRD*.severity = none
+# VSTHRD100: Avoid async void methods
+dotnet_diagnostic.VSTHRD100.severity = none
+
+dotnet_diagnostic.VSTHRD101.severity = none
