@@ -292,6 +292,7 @@ public class Terminal
 		set => _object.LocalizeNumeralSystem = value;
 	}
 
+	[Obsolete("Use 'Godot.Node.AutoTranslateMode' and 'Godot.Node.CanAutoTranslate()' instead.")]
 	public bool AutoTranslate
 	{
 		get => _object.AutoTranslate;
