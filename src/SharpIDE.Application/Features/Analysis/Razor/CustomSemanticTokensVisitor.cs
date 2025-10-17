@@ -14,7 +14,7 @@ internal sealed class CustomSemanticTokensVisitor : SyntaxWalker
     private readonly ISemanticTokensLegendService _semanticTokensLegend;
     private readonly bool _colorCodeBackground;
 
-    private bool _addRazorCodeModifier;
+    private bool _addRazorCodeModifier = false;
 
     private CustomSemanticTokensVisitor(List<SemanticRange> semanticRanges, RazorCodeDocument razorCodeDocument, TextSpan range, ISemanticTokensLegendService semanticTokensLegend, bool colorCodeBackground)
     {

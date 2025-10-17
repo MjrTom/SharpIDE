@@ -11,6 +11,7 @@ using SharpIDE.Application.Features.SolutionDiscovery;
 
 namespace SharpIDE.Application.Features.Debugging;
 
+#pragma warning disable VSTHRD101
 public class DebuggingService
 {
 	private DebugProtocolHost _debugProtocolHost = null!;
@@ -61,9 +62,9 @@ public class DebuggingService
 			await Task.CompletedTask.ConfigureAwait(ConfigureAwaitOptions.ForceYielding); // The VS Code Debug Protocol throws if you try to send a request from the dispatcher thread
 			debugProtocolHost.SendRequestSync(new DisconnectRequest());
 		});
-		debugProtocolHost.RegisterClientRequestType<HandshakeRequest, HandshakeArguments, HandshakeResponse>(responder =>
+		debugProtocolHost.RegisterClientRequestType<HandshakeRequest, HandshakeArguments, HandshakeResponse>(async void (responder) =>
 		{
-			var signatureResponse = DebuggerHandshakeSigner.Sign(responder.Arguments.Value);
+			var signatureResponse = await DebuggerHandshakeSigner.Sign(responder.Arguments.Value);
 			responder.SetResponse(new HandshakeResponse(signatureResponse));
 		});
 		debugProtocolHost.RegisterEventType<StoppedEvent>(async void (@event) =>
