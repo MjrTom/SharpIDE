@@ -60,6 +60,8 @@ public partial class SharpIdeCodeEdit : CodeEdit
 	{
 		if (_currentFile is null) return;
 		GD.Print("Solution altered, updating project diagnostics for current file");
+		var documentDiagnostics = await RoslynAnalysis.GetDocumentDiagnostics(_currentFile);
+		await this.InvokeAsync(() => SetDiagnostics(documentDiagnostics));
 		var projectDiagnostics = await RoslynAnalysis.GetProjectDiagnosticsForFile(_currentFile);
 		await this.InvokeAsync(() => SetProjectDiagnostics(projectDiagnostics));
 	}
@@ -308,7 +310,6 @@ public partial class SharpIdeCodeEdit : CodeEdit
 		var syntaxHighlighting = RoslynAnalysis.GetDocumentSyntaxHighlighting(_currentFile);
 		var razorSyntaxHighlighting = RoslynAnalysis.GetRazorDocumentSyntaxHighlighting(_currentFile);
 		var diagnostics = RoslynAnalysis.GetDocumentDiagnostics(_currentFile);
-		var slnDiagnostics = RoslynAnalysis.UpdateSolutionDiagnostics();
 		await Task.WhenAll(syntaxHighlighting, razorSyntaxHighlighting, diagnostics);
 		Callable.From(() =>
 		{
@@ -323,7 +324,6 @@ public partial class SharpIdeCodeEdit : CodeEdit
 			SetVScroll(vScroll);
 			EndComplexOperation();
 		}).CallDeferred();
-		await slnDiagnostics;
 	}
 
 	public void SetFileLinePosition(SharpIdeFileLinePosition fileLinePosition)

@@ -9,6 +9,7 @@ namespace SharpIDE.Application.Features.FilePersistence;
 /// Holds the in memory copies of files, and manages saving/loading them to/from disk.
 public class IdeOpenTabsFileManager
 {
+	public static IdeOpenTabsFileManager Instance { get; set; } = null!;
 	private ConcurrentDictionary<SharpIdeFile, Lazy<Task<string>>> _openFiles = new();
 
 	/// Implicitly 'opens' a file if not already open, and returns the text.
@@ -46,12 +47,17 @@ public class IdeOpenTabsFileManager
 		var newTextTaskLazy = new Lazy<Task<string>>(() => File.ReadAllTextAsync(file.Path));
 		_openFiles[file] = newTextTaskLazy;
 		var textTask = newTextTaskLazy.Value;
-		if (file.IsRoslynWorkspaceFile)
-		{
-			var text = await textTask;
-			await RoslynAnalysis.UpdateDocument(file, text);
-			GlobalEvents.Instance.SolutionAltered.InvokeParallelFireAndForget();
-		}
+
+	}
+
+	public async Task<bool> ReloadFileFromDiskIfOpenInEditor(SharpIdeFile file)
+	{
+		if (!_openFiles.ContainsKey(file)) return false;
+
+		var newTextTaskLazy = new Lazy<Task<string>>(() => File.ReadAllTextAsync(file.Path));
+		_openFiles[file] = newTextTaskLazy;
+		//var textTask = newTextTaskLazy.Value;
+		return true;
 	}
 
 	public async Task SaveFileAsync(SharpIdeFile file)

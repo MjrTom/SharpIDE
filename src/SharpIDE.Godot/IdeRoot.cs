@@ -45,11 +45,12 @@ public partial class IdeRoot : Control
 		GodotGlobalEvents.Instance = new GodotGlobalEvents();
 		GlobalEvents.Instance = new GlobalEvents();
 		BuildService.Instance = new BuildService(); // TODO: Sort out this mess with singletons, especially access across Application services
+		IdeOpenTabsFileManager.Instance = new IdeOpenTabsFileManager();
 		Singletons.RunService = new RunService();
 		Singletons.BuildService = BuildService.Instance;
 		Singletons.FileWatcher?.Dispose();
 		Singletons.FileWatcher = new IdeFileWatcher();
-		Singletons.OpenTabsFileManager = new IdeOpenTabsFileManager();
+		Singletons.OpenTabsFileManager = IdeOpenTabsFileManager.Instance;
 		Singletons.FileExternalChangeHandler = new IdeFileExternalChangeHandler();
 		Singletons.FileSavedToDiskHandler = new IdeFileSavedToDiskHandler();
 	}
