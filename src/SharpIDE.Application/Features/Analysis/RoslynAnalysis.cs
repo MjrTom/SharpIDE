@@ -261,7 +261,7 @@ public class RoslynAnalysis
 			}).ToImmutableArray();
 	}
 
-	public async Task UpdateSolutionDiagnostics()
+	public async Task UpdateSolutionDiagnostics(CancellationToken cancellationToken = default)
 	{
 		Console.WriteLine("RoslynAnalysis: Updating solution diagnostics");
 		var timer = Stopwatch.StartNew();
@@ -269,7 +269,7 @@ public class RoslynAnalysis
 		await _solutionLoadedTcs.Task;
 		foreach (var project in _sharpIdeSolutionModel!.AllProjects)
 		{
-			var projectDiagnostics = await GetProjectDiagnostics(project);
+			var projectDiagnostics = await GetProjectDiagnostics(project, cancellationToken);
 			// TODO: only add and remove diffs
 			project.Diagnostics.RemoveRange(project.Diagnostics);
 			project.Diagnostics.AddRange(projectDiagnostics);
@@ -278,11 +278,10 @@ public class RoslynAnalysis
 		Console.WriteLine($"RoslynAnalysis: Solution diagnostics updated in {timer.ElapsedMilliseconds}ms");
 	}
 
-	public async Task<ImmutableArray<Diagnostic>> GetProjectDiagnostics(SharpIdeProjectModel projectModel)
+	public async Task<ImmutableArray<Diagnostic>> GetProjectDiagnostics(SharpIdeProjectModel projectModel, CancellationToken cancellationToken = default)
 	{
 		using var _ = SharpIdeOtel.Source.StartActivity($"{nameof(RoslynAnalysis)}.{nameof(GetProjectDiagnostics)}");
 		await _solutionLoadedTcs.Task;
-		var cancellationToken = CancellationToken.None;
 		var project = _workspace!.CurrentSolution.Projects.Single(s => s.FilePath == projectModel.FilePath);
 		var compilation = await project.GetCompilationAsync(cancellationToken);
 		Guard.Against.Null(compilation, nameof(compilation));
@@ -292,17 +291,16 @@ public class RoslynAnalysis
 		return diagnostics;
 	}
 
-	public async Task<ImmutableArray<SharpIdeDiagnostic>> GetProjectDiagnosticsForFile(SharpIdeFile sharpIdeFile)
+	public async Task<ImmutableArray<SharpIdeDiagnostic>> GetProjectDiagnosticsForFile(SharpIdeFile sharpIdeFile, CancellationToken cancellationToken = default)
 	{
 		using var _ = SharpIdeOtel.Source.StartActivity($"{nameof(RoslynAnalysis)}.{nameof(GetProjectDiagnosticsForFile)}");
 		await _solutionLoadedTcs.Task;
 		if (sharpIdeFile.IsRoslynWorkspaceFile is false) return [];
-		var cancellationToken = CancellationToken.None;
 		var project = _workspace!.CurrentSolution.Projects.Single(s => s.FilePath == ((IChildSharpIdeNode)sharpIdeFile).GetNearestProjectNode()!.FilePath);
 		var compilation = await project.GetCompilationAsync(cancellationToken);
 		Guard.Against.Null(compilation, nameof(compilation));
 
-		var document = await GetDocumentForSharpIdeFile(sharpIdeFile);
+		var document = await GetDocumentForSharpIdeFile(sharpIdeFile, cancellationToken);
 
 		var syntaxTree = compilation.SyntaxTrees.Single(s => s.FilePath == document.FilePath);
 		var diagnostics = compilation.GetDiagnostics(cancellationToken)
@@ -319,7 +317,7 @@ public class RoslynAnalysis
 		await _solutionLoadedTcs.Task;
 		if (fileModel.IsRoslynWorkspaceFile is false) return [];
 
-		var document = await GetDocumentForSharpIdeFile(fileModel);
+		var document = await GetDocumentForSharpIdeFile(fileModel, cancellationToken);
 		Guard.Against.Null(document, nameof(document));
 
 		var semanticModel = await document.GetSemanticModelAsync(cancellationToken);
@@ -331,11 +329,11 @@ public class RoslynAnalysis
 		return result;
 	}
 
-	private static async Task<Document> GetDocumentForSharpIdeFile(SharpIdeFile fileModel)
+	private static async Task<Document> GetDocumentForSharpIdeFile(SharpIdeFile fileModel, CancellationToken cancellationToken = default)
 	{
 		var project = _workspace!.CurrentSolution.Projects.Single(s => s.FilePath == ((IChildSharpIdeNode)fileModel).GetNearestProjectNode()!.FilePath);
 		var document = fileModel.IsCsharpFile ? project.Documents.SingleOrDefault(s => s.FilePath == fileModel.Path)
-				: await GetRazorSourceGeneratedDocumentInProjectForSharpIdeFile(project, fileModel);
+				: await GetRazorSourceGeneratedDocumentInProjectForSharpIdeFile(project, fileModel, cancellationToken);
 		Guard.Against.Null(document, nameof(document));
 		return document;
 	}
