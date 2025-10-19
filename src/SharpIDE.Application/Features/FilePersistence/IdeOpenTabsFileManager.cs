@@ -33,12 +33,6 @@ public class IdeOpenTabsFileManager(RoslynAnalysis roslynAnalysis)
 
 		var newLazyTask = new Lazy<Task<string>>(() => Task.FromResult(newText));
 		_openFiles[file] = newLazyTask;
-		// Potentially should be event based?
-		if (file.IsRoslynWorkspaceFile)
-		{
-			await _roslynAnalysis.UpdateDocument(file, newText);
-			GlobalEvents.Instance.SolutionAltered.InvokeParallelFireAndForget();
-		}
 	}
 
 	public async Task ReloadFileFromDisk(SharpIdeFile file)

@@ -65,17 +65,21 @@ public partial class SharpIdeCodeEdit : CodeEdit
 		GlobalEvents.Instance.SolutionAltered.Subscribe(OnSolutionAltered);
 	}
 
+	private CancellationTokenSource _solutionAlteredCts = new();
 	private async Task OnSolutionAltered()
 	{
 		if (_currentFile is null) return;
-		GD.Print("Solution altered, updating project diagnostics for current file");
-		var documentSyntaxHighlighting = _roslynAnalysis.GetDocumentSyntaxHighlighting(_currentFile);
-		var razorSyntaxHighlighting = _roslynAnalysis.GetRazorDocumentSyntaxHighlighting(_currentFile);
+		GD.Print($"[{_currentFile.Name}] Solution altered, updating project diagnostics for file");
+		await _solutionAlteredCts.CancelAsync();
+		_solutionAlteredCts = new CancellationTokenSource();
+		var ct = _solutionAlteredCts.Token;
+		var documentSyntaxHighlighting = _roslynAnalysis.GetDocumentSyntaxHighlighting(_currentFile, ct);
+		var razorSyntaxHighlighting = _roslynAnalysis.GetRazorDocumentSyntaxHighlighting(_currentFile, ct);
 		await Task.WhenAll(documentSyntaxHighlighting, razorSyntaxHighlighting);
 		await this.InvokeAsync(async () => SetSyntaxHighlightingModel(await documentSyntaxHighlighting, await razorSyntaxHighlighting));
-		var documentDiagnostics = await _roslynAnalysis.GetDocumentDiagnostics(_currentFile);
+		var documentDiagnostics = await _roslynAnalysis.GetDocumentDiagnostics(_currentFile, ct);
 		await this.InvokeAsync(() => SetDiagnostics(documentDiagnostics));
-		var projectDiagnostics = await _roslynAnalysis.GetProjectDiagnosticsForFile(_currentFile);
+		var projectDiagnostics = await _roslynAnalysis.GetProjectDiagnosticsForFile(_currentFile, ct);
 		await this.InvokeAsync(() => SetProjectDiagnostics(projectDiagnostics));
 	}
 
