@@ -5,7 +5,7 @@ using SharpIDE.Application.Features.SolutionDiscovery.VsPersistence;
 
 namespace SharpIDE.Application.Features.SolutionDiscovery;
 
-public class SharpIdeFolder : ISharpIdeNode, IExpandableSharpIdeNode, IChildSharpIdeNode
+public class SharpIdeFolder : ISharpIdeNode, IExpandableSharpIdeNode, IChildSharpIdeNode, IFolderOrProject
 {
 	public required IExpandableSharpIdeNode Parent { get; set; }
 	public required string Path { get; set; }

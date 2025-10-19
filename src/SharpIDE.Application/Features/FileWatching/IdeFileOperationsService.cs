@@ -12,4 +12,10 @@ public class IdeFileOperationsService(SharpIdeSolutionModificationService sharpI
 		Directory.CreateDirectory(newDirectoryPath);
 		var newFolder = await _sharpIdeSolutionModificationService.AddDirectory(parentFolder, newDirectoryName);
 	}
+
+	public async Task DeleteDirectory(SharpIdeFolder folder)
+	{
+		Directory.Delete(folder.Path, true);
+		await _sharpIdeSolutionModificationService.RemoveDirectory(folder);
+	}
 }

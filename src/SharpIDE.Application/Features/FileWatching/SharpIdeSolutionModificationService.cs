@@ -17,4 +17,11 @@ public class SharpIdeSolutionModificationService
 		SolutionModel.AllFolders.Add(sharpIdeFolder);
 		return sharpIdeFolder;
 	}
+
+	public async Task RemoveDirectory(SharpIdeFolder folder)
+	{
+		var parentFolderOrProject = (IFolderOrProject)folder.Parent;
+		parentFolderOrProject.Folders.Remove(folder);
+		SolutionModel.AllFolders.Remove(folder);
+	}
 }

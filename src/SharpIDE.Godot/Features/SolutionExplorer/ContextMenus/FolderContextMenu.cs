@@ -1,4 +1,5 @@
 ﻿using Godot;
+using SharpIDE.Application.Features.FileWatching;
 using SharpIDE.Application.Features.SolutionDiscovery;
 using SharpIDE.Godot.Features.SolutionExplorer.ContextMenus.Dialogs;
 
@@ -7,7 +8,8 @@ namespace SharpIDE.Godot.Features.SolutionExplorer;
 file enum FolderContextMenuOptions
 {
     CreateNew = 1,
-    RevealInFileExplorer = 2
+    RevealInFileExplorer = 2,
+    Delete = 3
 }
 
 file enum CreateNewSubmenuOptions
@@ -18,6 +20,7 @@ file enum CreateNewSubmenuOptions
 
 public partial class SolutionExplorerPanel
 {
+    [Inject] private readonly IdeFileOperationsService _ideFileOperationsService = null!;
     private void OpenContextMenuFolder(SharpIdeFolder folder)
     {
         var menu = new PopupMenu();
@@ -30,6 +33,7 @@ public partial class SolutionExplorerPanel
         createNewSubmenu.IdPressed += id => OnCreateNewSubmenuPressed(id, folder);
         
         menu.AddItem("Reveal in File Explorer", (int)FolderContextMenuOptions.RevealInFileExplorer);
+        menu.AddItem("Delete", (int)FolderContextMenuOptions.Delete);
         menu.PopupHide += () => menu.QueueFree();
         menu.IdPressed += id =>
         {
@@ -37,6 +41,31 @@ public partial class SolutionExplorerPanel
             if (actionId is FolderContextMenuOptions.RevealInFileExplorer)
             {
                 OS.ShellOpen(folder.Path);
+            }
+            else if (actionId is FolderContextMenuOptions.Delete)
+            {
+                var confirmedTcs = new TaskCompletionSource<bool>();
+                var confirmationDialog = new ConfirmationDialog();
+                confirmationDialog.Title = "Delete";
+                confirmationDialog.DialogText = $"Delete '{folder.Name}' file?";
+                confirmationDialog.Confirmed += () =>
+                {
+                    confirmedTcs.SetResult(true);
+                };
+                confirmationDialog.Canceled += () =>
+                {
+                    confirmedTcs.SetResult(false);
+                };
+                AddChild(confirmationDialog);
+                confirmationDialog.PopupCentered();
+                _ = Task.GodotRun(async () =>
+                {
+                    var confirmed = await confirmedTcs.Task;
+                    if (confirmed)
+                    {
+                        await _ideFileOperationsService.DeleteDirectory(folder);
+                    }
+                });
             }
         };
 			

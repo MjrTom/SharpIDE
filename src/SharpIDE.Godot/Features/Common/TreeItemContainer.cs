@@ -15,7 +15,7 @@ public static class ObservableTreeExtensions
     {
         foreach (var existing in hashSet)
         {
-            var viewChangedEvent = new ViewChangedEvent<T, TreeItemContainer>(NotifyCollectionChangedAction.Add, (existing, new TreeItemContainer()), (null!, null!), 0, 0, new SortOperation<T>());
+            var viewChangedEvent = new ViewChangedEvent<T, TreeItemContainer>(NotifyCollectionChangedAction.Add, (existing, new TreeItemContainer()), (null!, null!), -1, -1, new SortOperation<T>());
             func(viewChangedEvent);
         }
         return hashSet;
