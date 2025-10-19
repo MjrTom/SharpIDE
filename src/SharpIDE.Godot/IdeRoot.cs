@@ -141,7 +141,7 @@ public partial class IdeRoot : Control
 			_searchAllFilesWindow.Solution = solutionModel;
 			_fileExternalChangeHandler.SolutionModel = solutionModel;
 			_fileChangedService.SolutionModel = solutionModel;
-			Callable.From(_solutionExplorerPanel.RepopulateTree).CallDeferred();
+			Callable.From(_solutionExplorerPanel.BindToSolution).CallDeferred();
 			_roslynAnalysis.StartSolutionAnalysis(solutionModel);
 			_fileWatcher.StartWatching(solutionModel);
 			

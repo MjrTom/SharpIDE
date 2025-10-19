@@ -1,8 +1,12 @@
+using System.Collections.Specialized;
 using Ardalis.GuardClauses;
 using Godot;
+using ObservableCollections;
+using R3;
 using SharpIDE.Application.Features.Analysis;
 using SharpIDE.Application.Features.SolutionDiscovery;
 using SharpIDE.Application.Features.SolutionDiscovery.VsPersistence;
+using SharpIDE.Godot.Features.Common;
 using SharpIDE.Godot.Features.Problems;
 
 namespace SharpIDE.Godot.Features.SolutionExplorer;
@@ -22,6 +26,7 @@ public partial class SolutionExplorerPanel : MarginContainer
 	
 	public SharpIdeSolutionModel SolutionModel { get; set; } = null!;
 	private Tree _tree = null!;
+	private TreeItem _rootItem = null!;
 	public override void _Ready()
 	{
 		_tree = GetNode<Tree>("Tree");
@@ -86,97 +91,170 @@ public partial class SolutionExplorerPanel : MarginContainer
 		return null;
 	}
 
-	public void RepopulateTree()
+	public void BindToSolution() => BindToSolution(SolutionModel);
+	[RequiresGodotUiThread]
+	public void BindToSolution(SharpIdeSolutionModel solution)
 	{
-		_tree.Clear();
+	    _tree.Clear();
 
-		var rootItem = _tree.CreateItem();
-		rootItem.SetText(0, SolutionModel.Name);
-		rootItem.SetIcon(0, SlnIcon);
+	    // Root
+	    var rootItem = _tree.CreateItem();
+	    rootItem.SetText(0, solution.Name);
+	    rootItem.SetIcon(0, SlnIcon);
+	    _rootItem = rootItem;
 
-		// Add projects directly under solution
-		foreach (var project in SolutionModel.Projects)
-		{
-			AddProjectToTree(rootItem, project);
-		}
+	    // Observe Projects
+	    var projectsView = solution.Projects
+		    .WithInitialPopulation(s => CreateProjectTreeItem(_tree, _rootItem, s))
+		    .CreateView(y => new TreeItemContainer());
+	    projectsView.ObserveChanged()
+	        .SubscribeAwait(async (e, ct) => await (e.Action switch
+	        {
+	            NotifyCollectionChangedAction.Add => this.InvokeAsync(() => CreateProjectTreeItem(_tree, _rootItem, e)),
+	            NotifyCollectionChangedAction.Remove => FreeTreeItem(e.OldItem.View.Value),
+	            _ => Task.CompletedTask
+	        })).AddTo(this);
 
-		// Add folders under solution
-		foreach (var folder in SolutionModel.SlnFolders)
-		{
-			AddSlnFolderToTree(rootItem, folder);
-		}
-		rootItem.SetCollapsedRecursive(true);
-		rootItem.Collapsed = false;
+	    // Observe Solution Folders
+	    var foldersView = solution.SlnFolders
+		    .WithInitialPopulation(s => CreateSlnFolderTreeItem(_tree, _rootItem, s))
+		    .CreateView(y => new TreeItemContainer());
+	    foldersView.ObserveChanged()
+	        .SubscribeAwait(async (e, ct) => await (e.Action switch
+	        {
+	            NotifyCollectionChangedAction.Add => this.InvokeAsync(() => CreateSlnFolderTreeItem(_tree, _rootItem, e)),
+	            NotifyCollectionChangedAction.Remove => FreeTreeItem(e.OldItem.View.Value),
+	            _ => Task.CompletedTask
+	        })).AddTo(this);
+	    
+	    rootItem.SetCollapsedRecursive(true);
+	    rootItem.Collapsed = false;
 	}
 
-	private void AddSlnFolderToTree(TreeItem parent, SharpIdeSolutionFolder folder)
+	[RequiresGodotUiThread]
+	private void CreateSlnFolderTreeItem(Tree tree, TreeItem parent, ViewChangedEvent<SharpIdeSolutionFolder, TreeItemContainer> e)
 	{
-		var folderItem = _tree.CreateItem(parent);
-		folderItem.SetText(0, folder.Name);
-		folderItem.SetIcon(0, SlnFolderIcon);
-		var container = new RefCountedContainer<SharpIdeSolutionFolder>(folder);
-		folderItem.SetMetadata(0, container);
+	    var folderItem = tree.CreateItem(parent);
+	        folderItem.SetText(0, e.NewItem.Value.Name);
+	        folderItem.SetIcon(0, SlnFolderIcon);
+	        folderItem.SetMetadata(0, new RefCountedContainer<SharpIdeSolutionFolder>(e.NewItem.Value));
+	        e.NewItem.View.Value = folderItem;
 
-		foreach (var project in folder.Projects)
-		{
-			AddProjectToTree(folderItem, project);
-		}
+	        // Observe folder sub-collections
+	        var subFoldersView = e.NewItem.Value.Folders
+		        .WithInitialPopulation(s => CreateSlnFolderTreeItem(_tree, folderItem, s))
+		        .CreateView(y => new TreeItemContainer());
+	        subFoldersView.ObserveChanged()
+	            .SubscribeAwait(async (innerEvent, ct) => await (innerEvent.Action switch
+	            {
+	                NotifyCollectionChangedAction.Add => this.InvokeAsync(() => CreateSlnFolderTreeItem(_tree, folderItem, innerEvent)),
+	                NotifyCollectionChangedAction.Remove => FreeTreeItem(innerEvent.OldItem.View.Value),
+	                _ => Task.CompletedTask
+	            })).AddTo(this);
 
-		foreach (var subFolder in folder.Folders)
-		{
-			AddSlnFolderToTree(folderItem, subFolder); // recursion
-		}
+	        var projectsView = e.NewItem.Value.Projects
+		        .WithInitialPopulation(s => CreateProjectTreeItem(_tree, folderItem, s))
+		        .CreateView(y => new TreeItemContainer());
+	        projectsView.ObserveChanged()
+	            .SubscribeAwait(async (innerEvent, ct) => await (innerEvent.Action switch
+	            {
+	                NotifyCollectionChangedAction.Add => this.InvokeAsync(() => CreateProjectTreeItem(_tree, folderItem, innerEvent)),
+	                NotifyCollectionChangedAction.Remove => FreeTreeItem(innerEvent.OldItem.View.Value),
+	                _ => Task.CompletedTask
+	            })).AddTo(this);
 
-		foreach (var sharpIdeFile in folder.Files)
-		{
-			AddFileToTree(folderItem, sharpIdeFile);
-		}
+	        var filesView = e.NewItem.Value.Files
+		        .WithInitialPopulation(s => CreateFileTreeItem(_tree, folderItem, s))
+		        .CreateView(y => new TreeItemContainer());
+	        filesView.ObserveChanged()
+	            .SubscribeAwait(async (innerEvent, ct) => await (innerEvent.Action switch
+	            {
+	                NotifyCollectionChangedAction.Add => this.InvokeAsync(() => CreateFileTreeItem(_tree, folderItem, innerEvent)),
+	                NotifyCollectionChangedAction.Remove => FreeTreeItem(innerEvent.OldItem.View.Value),
+	                _ => Task.CompletedTask
+	            })).AddTo(this);
 	}
 
-	private void AddProjectToTree(TreeItem parent, SharpIdeProjectModel project)
+	[RequiresGodotUiThread]
+	private void CreateProjectTreeItem(Tree tree, TreeItem parent, ViewChangedEvent<SharpIdeProjectModel, TreeItemContainer> e)
 	{
-		var projectItem = _tree.CreateItem(parent);
-		projectItem.SetText(0, project.Name);
+		var projectItem = tree.CreateItem(parent);
+		projectItem.SetText(0, e.NewItem.Value.Name);
 		projectItem.SetIcon(0, CsprojIcon);
-		var container = new RefCountedContainer<SharpIdeProjectModel>(project);
-		projectItem.SetMetadata(0, container);
+		projectItem.SetMetadata(0, new RefCountedContainer<SharpIdeProjectModel>(e.NewItem.Value));
+		e.NewItem.View.Value = projectItem;
 
-		foreach (var sharpIdeFolder in project.Folders)
-		{
-			AddFolderToTree(projectItem, sharpIdeFolder);
-		}
+		// Observe project folders
+		var foldersView = e.NewItem.Value.Folders
+			.WithInitialPopulation(s => CreateFolderTreeItem(_tree, projectItem, s))
+			.CreateView(y => new TreeItemContainer());
+		foldersView.ObserveChanged()
+			.SubscribeAwait(async (innerEvent, ct) => await (innerEvent.Action switch
+			{
+				NotifyCollectionChangedAction.Add => this.InvokeAsync(() => CreateFolderTreeItem(_tree, projectItem, innerEvent)),
+				NotifyCollectionChangedAction.Remove => FreeTreeItem(innerEvent.OldItem.View.Value),
+				_ => Task.CompletedTask
+			})).AddTo(this);
 
-		foreach (var file in project.Files)
-		{
-			AddFileToTree(projectItem, file);
-		}
+		// Observe project files
+		var filesView = e.NewItem.Value.Files
+			.WithInitialPopulation(s => CreateFileTreeItem(_tree, projectItem, s))
+			.CreateView(y => new TreeItemContainer());
+		filesView.ObserveChanged()
+			.SubscribeAwait(async (innerEvent, ct) => await (innerEvent.Action switch
+			{
+				NotifyCollectionChangedAction.Add => this.InvokeAsync(() => CreateFileTreeItem(_tree, projectItem, innerEvent)),
+				NotifyCollectionChangedAction.Remove => FreeTreeItem(innerEvent.OldItem.View.Value),
+				_ => Task.CompletedTask
+			})).AddTo(this);
 	}
 
-	private void AddFolderToTree(TreeItem projectItem, SharpIdeFolder sharpIdeFolder)
+	[RequiresGodotUiThread]
+	private void CreateFolderTreeItem(Tree tree, TreeItem parent, ViewChangedEvent<SharpIdeFolder, TreeItemContainer> e)
 	{
-		var folderItem = _tree.CreateItem(projectItem);
-		folderItem.SetText(0, sharpIdeFolder.Name);
+		var folderItem = tree.CreateItem(parent);
+		folderItem.SetText(0, e.NewItem.Value.Name);
 		folderItem.SetIcon(0, FolderIcon);
-		var container = new RefCountedContainer<SharpIdeFolder>(sharpIdeFolder);
-		folderItem.SetMetadata(0, container);
+		folderItem.SetMetadata(0, new RefCountedContainer<SharpIdeFolder>(e.NewItem.Value));
+		e.NewItem.View.Value = folderItem;
 
-		foreach (var subFolder in sharpIdeFolder.Folders)
-		{
-			AddFolderToTree(folderItem, subFolder); // recursion
-		}
+		// Observe subfolders
+		var subFoldersView = e.NewItem.Value.Folders
+			.WithInitialPopulation(s => CreateFolderTreeItem(_tree, folderItem, s))
+			.CreateView(y => new TreeItemContainer());
+		subFoldersView.ObserveChanged()
+			.SubscribeAwait(async (innerEvent, ct) => await (innerEvent.Action switch
+			{
+				NotifyCollectionChangedAction.Add => this.InvokeAsync(() => CreateFolderTreeItem(_tree, folderItem, innerEvent)),
+				NotifyCollectionChangedAction.Remove => FreeTreeItem(innerEvent.OldItem.View.Value),
+				_ => Task.CompletedTask
+			})).AddTo(this);
 
-		foreach (var file in sharpIdeFolder.Files)
-		{
-			AddFileToTree(folderItem, file);
-		}
+		// Observe files
+		var filesView = e.NewItem.Value.Files
+			.WithInitialPopulation(s => CreateFileTreeItem(_tree, folderItem, s))
+			.CreateView(y => new TreeItemContainer());
+		filesView.ObserveChanged()
+			.SubscribeAwait(async (innerEvent, ct) => await (innerEvent.Action switch
+			{
+				NotifyCollectionChangedAction.Add => this.InvokeAsync(() => CreateFileTreeItem(_tree, folderItem, innerEvent)),
+				NotifyCollectionChangedAction.Remove => FreeTreeItem(innerEvent.OldItem.View.Value),
+				_ => Task.CompletedTask
+			})).AddTo(this);
 	}
 
-	private void AddFileToTree(TreeItem parent, SharpIdeFile file)
+	[RequiresGodotUiThread]
+	private void CreateFileTreeItem(Tree tree, TreeItem parent, ViewChangedEvent<SharpIdeFile, TreeItemContainer> e)
 	{
-		var fileItem = _tree.CreateItem(parent);
-		fileItem.SetText(0, file.Name);
+		var fileItem = tree.CreateItem(parent);
+		fileItem.SetText(0, e.NewItem.Value.Name);
 		fileItem.SetIcon(0, CsharpFileIcon);
-		var container = new RefCountedContainer<SharpIdeFile>(file);
-		fileItem.SetMetadata(0, container);
+		fileItem.SetMetadata(0, new RefCountedContainer<SharpIdeFile>(e.NewItem.Value));
+		e.NewItem.View.Value = fileItem;
+	}
+
+	private async Task FreeTreeItem(TreeItem? item)
+	{
+	    await this.InvokeAsync(() => item?.Free());
 	}
 }

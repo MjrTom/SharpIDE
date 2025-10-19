@@ -5,6 +5,7 @@ using ObservableCollections;
 using R3;
 using SharpIDE.Application.Features.SolutionDiscovery;
 using SharpIDE.Application.Features.SolutionDiscovery.VsPersistence;
+using SharpIDE.Godot.Features.Common;
 
 namespace SharpIDE.Godot.Features.Problems;
 
@@ -41,10 +42,7 @@ public partial class ProblemsPanel : Control
         BindToTree(_projects);
     }
 
-    private class TreeItemContainer
-    {
-        public TreeItem? Value { get; set; }
-    }
+
     public void BindToTree(ObservableHashSet<SharpIdeProjectModel> list)
     {
         var view = list.CreateView(y => new TreeItemContainer());

@@ -35,8 +35,8 @@ public class SharpIdeSolutionModel : ISharpIdeNode, IExpandableSharpIdeNode
 	public required string Name { get; set; }
 	public required string FilePath { get; set; }
 	public required string DirectoryPath { get; set; }
-	public required List<SharpIdeProjectModel> Projects { get; set; }
-	public required List<SharpIdeSolutionFolder> SlnFolders { get; set; }
+	public required ObservableHashSet<SharpIdeProjectModel> Projects { get; set; }
+	public required ObservableHashSet<SharpIdeSolutionFolder> SlnFolders { get; set; }
 	public required HashSet<SharpIdeProjectModel> AllProjects { get; set; }
 	public required HashSet<SharpIdeFile> AllFiles { get; set; }
 	public required HashSet<SharpIdeFolder> AllFolders { get; set; }
@@ -52,8 +52,8 @@ public class SharpIdeSolutionModel : ISharpIdeNode, IExpandableSharpIdeNode
 		Name = solutionName;
 		FilePath = solutionFilePath;
 		DirectoryPath = Path.GetDirectoryName(solutionFilePath)!;
-		Projects = intermediateModel.Projects.Select(s => new SharpIdeProjectModel(s, allProjects, allFiles, allFolders, this)).ToList();
-		SlnFolders = intermediateModel.SolutionFolders.Select(s => new SharpIdeSolutionFolder(s, allProjects, allFiles, allFolders, this)).ToList();
+		Projects = new ObservableHashSet<SharpIdeProjectModel>(intermediateModel.Projects.Select(s => new SharpIdeProjectModel(s, allProjects, allFiles, allFolders, this)));
+		SlnFolders = new ObservableHashSet<SharpIdeSolutionFolder>(intermediateModel.SolutionFolders.Select(s => new SharpIdeSolutionFolder(s, allProjects, allFiles, allFolders, this)));
 		AllProjects = allProjects.ToHashSet();
 		AllFiles = allFiles.ToHashSet();
 		AllFolders = allFolders.ToHashSet();
@@ -62,9 +62,9 @@ public class SharpIdeSolutionModel : ISharpIdeNode, IExpandableSharpIdeNode
 public class SharpIdeSolutionFolder : ISharpIdeNode, IExpandableSharpIdeNode, IChildSharpIdeNode
 {
 	public required string Name { get; set; }
-	public required List<SharpIdeSolutionFolder> Folders { get; set; }
-	public required List<SharpIdeProjectModel> Projects { get; set; }
-	public required List<SharpIdeFile> Files { get; set; }
+	public required ObservableHashSet<SharpIdeSolutionFolder> Folders { get; set; }
+	public required ObservableHashSet<SharpIdeProjectModel> Projects { get; set; }
+	public required ObservableHashSet<SharpIdeFile> Files { get; set; }
 	public bool Expanded { get; set; }
 	public required IExpandableSharpIdeNode Parent { get; set; }
 
@@ -73,17 +73,17 @@ public class SharpIdeSolutionFolder : ISharpIdeNode, IExpandableSharpIdeNode, IC
 	{
 		Name = intermediateModel.Model.Name;
 		Parent = parent;
-		Files = intermediateModel.Files.Select(s => new SharpIdeFile(s.FullPath, s.Name, this, allFiles)).ToList();
-		Folders = intermediateModel.Folders.Select(x => new SharpIdeSolutionFolder(x, allProjects, allFiles, allFolders, this)).ToList();
-		Projects = intermediateModel.Projects.Select(x => new SharpIdeProjectModel(x, allProjects, allFiles, allFolders, this)).ToList();
+		Files = new ObservableHashSet<SharpIdeFile>(intermediateModel.Files.Select(s => new SharpIdeFile(s.FullPath, s.Name, this, allFiles)));
+		Folders = new ObservableHashSet<SharpIdeSolutionFolder>(intermediateModel.Folders.Select(x => new SharpIdeSolutionFolder(x, allProjects, allFiles, allFolders, this)));
+		Projects = new ObservableHashSet<SharpIdeProjectModel>(intermediateModel.Projects.Select(x => new SharpIdeProjectModel(x, allProjects, allFiles, allFolders, this)));
 	}
 }
 public class SharpIdeProjectModel : ISharpIdeNode, IExpandableSharpIdeNode, IChildSharpIdeNode
 {
 	public required string Name { get; set; }
 	public required string FilePath { get; set; }
-	public required List<SharpIdeFolder> Folders { get; set; }
-	public required List<SharpIdeFile> Files { get; set; }
+	public required ObservableHashSet<SharpIdeFolder> Folders { get; set; }
+	public required ObservableHashSet<SharpIdeFile> Files { get; set; }
 	public bool Expanded { get; set; }
 	public required IExpandableSharpIdeNode Parent { get; set; }
 	public bool Running { get; set; }
@@ -96,8 +96,8 @@ public class SharpIdeProjectModel : ISharpIdeNode, IExpandableSharpIdeNode, IChi
 		Parent = parent;
 		Name = projectModel.Model.ActualDisplayName;
 		FilePath = projectModel.FullFilePath;
-		Files = TreeMapperV2.GetFiles(projectModel.FullFilePath, this, allFiles);
-		Folders = TreeMapperV2.GetSubFolders(projectModel.FullFilePath, this, allFiles, allFolders);
+		Files = new ObservableHashSet<SharpIdeFile>(TreeMapperV2.GetFiles(projectModel.FullFilePath, this, allFiles));
+		Folders = new ObservableHashSet<SharpIdeFolder>(TreeMapperV2.GetSubFolders(projectModel.FullFilePath, this, allFiles, allFolders));
 		MsBuildEvaluationProjectTask = ProjectEvaluation.GetProject(projectModel.FullFilePath);
 		allProjects.Add(this);
 	}

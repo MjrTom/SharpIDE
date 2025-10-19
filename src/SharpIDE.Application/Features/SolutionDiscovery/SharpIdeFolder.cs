@@ -1,5 +1,6 @@
 ﻿using System.Collections.Concurrent;
 using System.Diagnostics.CodeAnalysis;
+using ObservableCollections;
 using SharpIDE.Application.Features.SolutionDiscovery.VsPersistence;
 
 namespace SharpIDE.Application.Features.SolutionDiscovery;
@@ -9,8 +10,8 @@ public class SharpIdeFolder : ISharpIdeNode, IExpandableSharpIdeNode, IChildShar
 	public required IExpandableSharpIdeNode Parent { get; set; }
 	public required string Path { get; set; }
 	public required string Name { get; set; }
-	public required List<SharpIdeFile> Files { get; set; }
-	public required List<SharpIdeFolder> Folders { get; set; }
+	public ObservableHashSet<SharpIdeFile> Files { get; init; }
+	public ObservableHashSet<SharpIdeFolder> Folders { get; init; }
 	public bool Expanded { get; set; }
 
 	[SetsRequiredMembers]
@@ -19,8 +20,8 @@ public class SharpIdeFolder : ISharpIdeNode, IExpandableSharpIdeNode, IChildShar
 		Parent = parent;
 		Path = folderInfo.FullName;
 		Name = folderInfo.Name;
-		Files = folderInfo.GetFiles(this, allFiles);
-		Folders = this.GetSubFolders(this, allFiles, allFolders);
+		Files = new ObservableHashSet<SharpIdeFile>(folderInfo.GetFiles(this, allFiles));
+		Folders = new ObservableHashSet<SharpIdeFolder>(this.GetSubFolders(this, allFiles, allFolders));
 	}
 
 	public SharpIdeFolder()
