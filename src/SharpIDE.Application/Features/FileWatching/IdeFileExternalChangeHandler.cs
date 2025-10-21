@@ -18,6 +18,24 @@ public class IdeFileExternalChangeHandler
 		GlobalEvents.Instance.FileSystemWatcherInternal.FileCreated.Subscribe(OnFileCreated);
 		GlobalEvents.Instance.FileSystemWatcherInternal.DirectoryCreated.Subscribe(OnFolderCreated);
 		GlobalEvents.Instance.FileSystemWatcherInternal.DirectoryDeleted.Subscribe(OnFolderDeleted);
+		GlobalEvents.Instance.FileSystemWatcherInternal.DirectoryRenamed.Subscribe(OnFolderRenamed);
+	}
+
+	// TODO: Test - this most likely only will ever be called on linux - windows and macos(?) does delete + create on rename of folders
+	private async Task OnFolderRenamed(string oldFolderPath, string newFolderPath)
+	{
+		var sharpIdeFolder = SolutionModel.AllFolders.SingleOrDefault(f => f.Path == newFolderPath);
+		if (sharpIdeFolder is null)
+		{
+			return;
+		}
+		var isMoveRatherThanRename = Path.GetDirectoryName(oldFolderPath) != Path.GetDirectoryName(newFolderPath);
+		if (isMoveRatherThanRename)
+		{
+			throw new NotImplementedException("Moving folders is not yet supported. Note that this should only be encountered on Linux.");
+		}
+		var newFolderName = Path.GetFileName(newFolderPath);
+		await _sharpIdeSolutionModificationService.RenameDirectory(sharpIdeFolder, newFolderName);
 	}
 
 	private async Task OnFolderDeleted(string folderPath)

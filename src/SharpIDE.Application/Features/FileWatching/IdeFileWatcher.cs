@@ -56,14 +56,23 @@ public sealed class IdeFileWatcher : IDisposable
 			case ChangeType.CHANGED: HandleChanged(e.FullPath); break;
 			case ChangeType.CREATED: HandleCreated(e.FullPath); break;
 			case ChangeType.DELETED: HandleDeleted(e.FullPath); break;
-			case ChangeType.RENAMED: HandleRenamed(e.OldFullPath, e.FullPath); break;
+			case ChangeType.RENAMED: HandleRenamed(e.OldFullPath!, e.FullPath); break;
 			default: throw new ArgumentOutOfRangeException();
 		}
 	}
 
-	private void HandleRenamed(string? oldFullPath, string fullPath)
+	private void HandleRenamed(string oldFullPath, string fullPath)
 	{
-		Console.WriteLine($"FileSystemWatcher: Renamed - {oldFullPath}, {fullPath}");
+		var isDirectory = Path.HasExtension(fullPath) is false;
+		if (isDirectory)
+		{
+			GlobalEvents.Instance.FileSystemWatcherInternal.DirectoryRenamed.InvokeParallelFireAndForget(oldFullPath, fullPath);
+		}
+		else
+		{
+			GlobalEvents.Instance.FileSystemWatcherInternal.FileRenamed.InvokeParallelFireAndForget(oldFullPath, fullPath);
+		}
+		//Console.WriteLine($"FileSystemWatcher: Renamed - {oldFullPath}, {fullPath}");
 	}
 
 	private void HandleDeleted(string fullPath)

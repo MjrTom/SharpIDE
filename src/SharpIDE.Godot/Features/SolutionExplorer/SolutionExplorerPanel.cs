@@ -49,7 +49,7 @@ public partial class SolutionExplorerPanel : MarginContainer
 			case (MouseButtonMask.Left, RefCountedContainer<SharpIdeProjectModel>): break;
 			case (MouseButtonMask.Right, RefCountedContainer<SharpIdeProjectModel> projectContainer): OpenContextMenuProject(projectContainer.Item); break;
 			case (MouseButtonMask.Left, RefCountedContainer<SharpIdeFolder>): break;
-			case (MouseButtonMask.Right, RefCountedContainer<SharpIdeFolder> folderContainer): OpenContextMenuFolder(folderContainer.Item); break;
+			case (MouseButtonMask.Right, RefCountedContainer<SharpIdeFolder> folderContainer): OpenContextMenuFolder(folderContainer.Item, selected); break;
 			case (MouseButtonMask.Left, RefCountedContainer<SharpIdeSolutionFolder>): break;
 			default: break;
 		}

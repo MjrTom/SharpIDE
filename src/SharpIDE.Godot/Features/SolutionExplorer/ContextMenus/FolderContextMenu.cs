@@ -10,7 +10,8 @@ file enum FolderContextMenuOptions
 {
     CreateNew = 1,
     RevealInFileExplorer = 2,
-    Delete = 3
+    Delete = 3,
+    Rename = 4
 }
 
 file enum CreateNewSubmenuOptions
@@ -22,7 +23,11 @@ file enum CreateNewSubmenuOptions
 public partial class SolutionExplorerPanel
 {
     [Inject] private readonly IdeFileOperationsService _ideFileOperationsService = null!;
-    private void OpenContextMenuFolder(SharpIdeFolder folder)
+    
+    private readonly PackedScene _newDirectoryDialogScene = GD.Load<PackedScene>("uid://bgi4u18y8pt4x");
+    private readonly PackedScene _newCsharpFileDialogScene = GD.Load<PackedScene>("uid://chnb7gmcdg0ww");
+    private readonly PackedScene _renameDirectoryDialogScene = GD.Load<PackedScene>("uid://btebkg8bo3b37");
+    private void OpenContextMenuFolder(SharpIdeFolder folder, TreeItem folderTreeItem)
     {
         var menu = new PopupMenu();
         AddChild(menu);
@@ -35,6 +40,7 @@ public partial class SolutionExplorerPanel
         
         menu.AddItem("Reveal in File Explorer", (int)FolderContextMenuOptions.RevealInFileExplorer);
         menu.AddItem("Delete", (int)FolderContextMenuOptions.Delete);
+        menu.AddItem("Rename", (int)FolderContextMenuOptions.Rename);
         menu.PopupHide += () => menu.QueueFree();
         menu.IdPressed += id =>
         {
@@ -68,6 +74,14 @@ public partial class SolutionExplorerPanel
                     }
                 });
             }
+            else if (actionId is FolderContextMenuOptions.Rename)
+            {
+                var renameDirectoryDialog = _renameDirectoryDialogScene.Instantiate<RenameDirectoryDialog>();
+                renameDirectoryDialog.Folder = folder;
+                renameDirectoryDialog.FolderTreeItem = folderTreeItem;
+                AddChild(renameDirectoryDialog);
+                renameDirectoryDialog.PopupCentered();
+            }
         };
 			
         var globalMousePosition = GetGlobalMousePosition();
@@ -75,8 +89,6 @@ public partial class SolutionExplorerPanel
         menu.Popup();
     }
 
-    private readonly PackedScene _newDirectoryDialogScene = GD.Load<PackedScene>("uid://bgi4u18y8pt4x");
-    private readonly PackedScene _newCsharpFileDialogScene = GD.Load<PackedScene>("uid://chnb7gmcdg0ww");
     private void OnCreateNewSubmenuPressed(long id, IFolderOrProject folder)
     {
         var actionId = (CreateNewSubmenuOptions)id;

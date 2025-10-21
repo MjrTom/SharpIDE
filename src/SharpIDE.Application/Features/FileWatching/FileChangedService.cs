@@ -23,6 +23,15 @@ public class FileChangedService(RoslynAnalysis roslynAnalysis, IdeOpenTabsFileMa
 
 	public SharpIdeSolutionModel SolutionModel { get; set; } = null!;
 
+	public async Task SharpIdeFileMoved(SharpIdeFile file, string oldFilePath)
+	{
+		if (file.IsRoslynWorkspaceFile)
+		{
+			await HandleWorkspaceFileMoved(file, oldFilePath);
+		}
+		// TODO: handle csproj moved
+	}
+
 	public async Task SharpIdeFileAdded(SharpIdeFile file, string content)
 	{
 		if (file.IsRoslynWorkspaceFile)
@@ -122,6 +131,17 @@ public class FileChangedService(RoslynAnalysis roslynAnalysis, IdeOpenTabsFileMa
 		await oldCts.CancelAsync();
 		oldCts.Dispose();
 		await _roslynAnalysis.RemoveDocument(file);
+		GlobalEvents.Instance.SolutionAltered.InvokeParallelFireAndForget();
+		await _roslynAnalysis.UpdateSolutionDiagnostics(newCts.Token);
+	}
+
+	private async Task HandleWorkspaceFileMoved(SharpIdeFile file, string oldFilePath)
+	{
+		var newCts = new CancellationTokenSource();
+		var oldCts = Interlocked.Exchange(ref _updateSolutionDiagnosticsCts, newCts);
+		await oldCts.CancelAsync();
+		oldCts.Dispose();
+		await _roslynAnalysis.MoveDocument(file, oldFilePath);
 		GlobalEvents.Instance.SolutionAltered.InvokeParallelFireAndForget();
 		await _roslynAnalysis.UpdateSolutionDiagnostics(newCts.Token);
 	}

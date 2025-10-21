@@ -796,4 +796,11 @@ public class RoslynAnalysis
 
 		_workspace.TryApplyChanges(newSolution);
 	}
+
+	public async Task MoveDocument(SharpIdeFile sharpIdeFile, string oldFilePath)
+	{
+		var document = _workspace!.CurrentSolution.GetDocumentIdsWithFilePath(oldFilePath).Single();
+		var updatedSolution = _workspace.CurrentSolution.WithDocumentFilePath(document, sharpIdeFile.Path);
+		_workspace.TryApplyChanges(updatedSolution);
+	}
 }
