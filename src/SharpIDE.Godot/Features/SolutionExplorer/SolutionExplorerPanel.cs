@@ -213,6 +213,12 @@ public partial class SolutionExplorerPanel : MarginContainer
 		folderItem.SetIcon(0, FolderIcon);
 		folderItem.SetMetadata(0, new RefCountedContainer<SharpIdeFolder>(sharpIdeFolder));
 		
+		Observable.EveryValueChanged(sharpIdeFolder, folder => folder.Name)
+			.Skip(1).SubscribeAwait(async (s, ct) =>
+			{
+				await this.InvokeAsync(() => folderItem.SetText(0, s));
+			}).AddTo(this);
+		
 		// Observe subfolders
 		var subFoldersView = sharpIdeFolder.Folders.CreateView(y => new TreeItemContainer());
 		subFoldersView.Unfiltered.ToList().ForEach(s => s.View.Value = CreateFolderTreeItem(_tree, folderItem, s.Value));

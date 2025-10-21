@@ -78,7 +78,6 @@ public partial class SolutionExplorerPanel
             {
                 var renameDirectoryDialog = _renameDirectoryDialogScene.Instantiate<RenameDirectoryDialog>();
                 renameDirectoryDialog.Folder = folder;
-                renameDirectoryDialog.FolderTreeItem = folderTreeItem;
                 AddChild(renameDirectoryDialog);
                 renameDirectoryDialog.PopupCentered();
             }

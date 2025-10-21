@@ -24,7 +24,7 @@ public class IdeFileExternalChangeHandler
 	// TODO: Test - this most likely only will ever be called on linux - windows and macos(?) does delete + create on rename of folders
 	private async Task OnFolderRenamed(string oldFolderPath, string newFolderPath)
 	{
-		var sharpIdeFolder = SolutionModel.AllFolders.SingleOrDefault(f => f.Path == newFolderPath);
+		var sharpIdeFolder = SolutionModel.AllFolders.SingleOrDefault(f => f.Path == oldFolderPath);
 		if (sharpIdeFolder is null)
 		{
 			return;

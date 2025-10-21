@@ -10,7 +10,6 @@ public partial class RenameDirectoryDialog : ConfirmationDialog
     private LineEdit _nameLineEdit = null!;
     
     public SharpIdeFolder Folder { get; set; } = null!;
-    public TreeItem FolderTreeItem { get; set; } = null!;
 
     [Inject] private readonly IdeFileOperationsService _ideFileOperationsService = null!;
     
@@ -61,7 +60,6 @@ public partial class RenameDirectoryDialog : ConfirmationDialog
         _ = Task.GodotRun(async () =>
         {
             await _ideFileOperationsService.RenameDirectory(Folder, directoryName);
-            await this.InvokeAsync(() => FolderTreeItem.SetText(0, directoryName));
         });
         QueueFree();
     }
