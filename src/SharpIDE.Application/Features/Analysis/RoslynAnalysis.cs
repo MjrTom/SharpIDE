@@ -484,8 +484,7 @@ public class RoslynAnalysis
 	{
 		using var _ = SharpIdeOtel.Source.StartActivity($"{nameof(RoslynAnalysis)}.{nameof(GetCodeCompletionsForDocumentAtPosition)}");
 		await _solutionLoadedTcs.Task;
-		var project = _workspace!.CurrentSolution.Projects.Single(s => s.FilePath == ((IChildSharpIdeNode)fileModel).GetNearestProjectNode()!.FilePath);
-		var document = project.Documents.Single(s => s.FilePath == fileModel.Path);
+		var document = await GetDocumentForSharpIdeFile(fileModel);
 		Guard.Against.Null(document, nameof(document));
 		var completions = await GetCompletionsAsync(document, linePosition).ConfigureAwait(false);
 		return completions;

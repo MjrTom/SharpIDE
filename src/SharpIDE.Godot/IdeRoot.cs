@@ -166,7 +166,7 @@ public partial class IdeRoot : Control
 				var selectedFile = filesToOpen.SingleOrDefault(f => f.IsSelected);
 				if (selectedFile.Item1 is not null) await GodotGlobalEvents.Instance.FileExternallySelected.InvokeParallelAsync(selectedFile.Item1, selectedFile.Item2);
 			});
-				
+
 			var tasks = solutionModel.AllProjects.Select(p => p.MsBuildEvaluationProjectTask).ToList();
 			await Task.WhenAll(tasks).ConfigureAwait(false);
 			var runnableProjects = solutionModel.AllProjects.Where(p => p.IsRunnable).ToList();
