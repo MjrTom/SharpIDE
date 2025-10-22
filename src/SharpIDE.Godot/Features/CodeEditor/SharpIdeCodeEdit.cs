@@ -502,7 +502,6 @@ public partial class SharpIdeCodeEdit : CodeEdit
 
 	public override void _ConfirmCodeCompletion(bool replace)
 	{
-		GD.Print("Code completion confirmed");
 		var selectedIndex = GetCodeCompletionSelectedIndex();
 		var selectedText = GetCodeCompletionOption(selectedIndex);
 		if (selectedText is null) return;

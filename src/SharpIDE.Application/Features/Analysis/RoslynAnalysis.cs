@@ -123,7 +123,7 @@ public class RoslynAnalysis
 		// 	_codeRefactoringProviders.AddRange(refactoringProviders);
 		// }
 
-		await UpdateSolutionDiagnostics();
+		await UpdateSolutionDiagnostics(cancellationToken);
 		// foreach (var project in solution.Projects)
 		// {
 		// 	// foreach (var document in project.Documents)
@@ -495,7 +495,7 @@ public class RoslynAnalysis
 	{
 		using var _ = SharpIdeOtel.Source.StartActivity($"{nameof(RoslynAnalysis)}.{nameof(GetCodeFixesForDocumentAtPosition)}");
 		await _solutionLoadedTcs.Task;
-		var document = await GetDocumentForSharpIdeFile(fileModel);
+		var document = await GetDocumentForSharpIdeFile(fileModel, cancellationToken);
 		Guard.Against.Null(document, nameof(document));
 		var semanticModel = await document.GetSemanticModelAsync(cancellationToken);
 		Guard.Against.Null(semanticModel, nameof(semanticModel));
