@@ -14,6 +14,7 @@ using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Microsoft.CodeAnalysis.FindSymbols;
 using Microsoft.CodeAnalysis.Host.Mef;
 using Microsoft.CodeAnalysis.MSBuild;
+using Microsoft.CodeAnalysis.Razor.DocumentMapping;
 using Microsoft.CodeAnalysis.Razor.Remote;
 using Microsoft.CodeAnalysis.Razor.SemanticTokens;
 using Microsoft.CodeAnalysis.Remote.Razor.ProjectSystem;
@@ -45,6 +46,7 @@ public class RoslynAnalysis(ILogger<RoslynAnalysis> logger, BuildService buildSe
 	private static CustomMsBuildProjectLoader? _msBuildProjectLoader;
 	private static RemoteSnapshotManager? _snapshotManager;
 	private static RemoteSemanticTokensLegendService? _semanticTokensLegendService;
+	private static IDocumentMappingService? _documentMappingService;
 	private static HashSet<CodeFixProvider> _codeFixProviders = [];
 	private static HashSet<CodeRefactoringProvider> _codeRefactoringProviders = [];
 
@@ -95,6 +97,7 @@ public class RoslynAnalysis(ILogger<RoslynAnalysis> logger, BuildService buildSe
 				TokenModifiers = TokenTypeProvider.ConstructTokenModifiers(),
 				TokenTypes = TokenTypeProvider.ConstructTokenTypes(false)
 			});
+			_documentMappingService = container.GetExports<IDocumentMappingService>().FirstOrDefault();
 
 			_msBuildProjectLoader = new CustomMsBuildProjectLoader(_workspace);
 		}
@@ -724,9 +727,16 @@ public class RoslynAnalysis(ILogger<RoslynAnalysis> logger, BuildService buildSe
 		var razorText = await additionalDocument.GetTextAsync(cancellationToken);
 
 		var mappedPosition = MapRazorLinePositionToGeneratedCSharpAbsolutePosition(razorCSharpDocument, razorText, linePosition);
+		if (mappedPosition is null) return (null, null);
 		var semanticModelAsync = await generatedDocument.GetSemanticModelAsync(cancellationToken);
 		var (symbol, linePositionSpan) = GetSymbolAtPosition(semanticModelAsync!, generatedDocSyntaxRoot!, mappedPosition!.Value);
-		return (symbol, linePositionSpan);
+		if (symbol is null || linePositionSpan is null) return (null, null);
+		Guard.Against.Null(linePositionSpan, nameof(linePositionSpan));
+		if (_documentMappingService!.TryMapToRazorDocumentRange(razorCSharpDocument, linePositionSpan.Value, MappingBehavior.Strict, out var mappedRazorLinePositionSpan) is false)
+		{
+			throw new InvalidOperationException("Failed to map C# line position span back to Razor.");
+		}
+		return (symbol, mappedRazorLinePositionSpan);
 	}
 
 	private async Task<(ISymbol? symbol, LinePositionSpan? linePositionSpan)> LookupSymbolInCs(SharpIdeFile fileModel, LinePosition linePosition)
