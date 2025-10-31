@@ -107,7 +107,7 @@ public class SharpIdeSolutionModificationService(FileChangedService fileChangedS
 		var parentFolderOrProject = (IFolderOrProject)folder.Parent;
 		var currentPosition = parentFolderOrProject.Folders.IndexOf(folder);
 		var insertionPosition = GetMovePosition(parentFolderOrProject, folder);
-		if (currentPosition != insertionPosition) parentFolderOrProject.Files.Move(currentPosition, insertionPosition);
+		if (currentPosition != insertionPosition) parentFolderOrProject.Folders.Move(currentPosition, insertionPosition);
 
 		var stack = new Stack<SharpIdeFolder>();
 		stack.Push(folder);
