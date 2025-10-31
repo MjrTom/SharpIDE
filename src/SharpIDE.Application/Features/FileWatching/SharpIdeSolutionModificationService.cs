@@ -70,7 +70,8 @@ public class SharpIdeSolutionModificationService(FileChangedService fileChangedS
 
 		var parentFolderOrProject = (IFolderOrProject)folderToMove.Parent;
 		parentFolderOrProject.Folders.Remove(folderToMove);
-		destinationParentNode.Folders.Add(folderToMove);
+		var insertionIndex = GetInsertionPosition(destinationParentNode, folderToMove);
+		destinationParentNode.Folders.Insert(insertionIndex, folderToMove);
 		folderToMove.Parent = destinationParentNode;
 		folderToMove.Path = newFolderPath;
 
@@ -102,6 +103,11 @@ public class SharpIdeSolutionModificationService(FileChangedService fileChangedS
 
 		folder.Name = renamedFolderName;
 		folder.Path = Path.Combine(Path.GetDirectoryName(oldFolderPath)!, renamedFolderName);
+
+		var parentFolderOrProject = (IFolderOrProject)folder.Parent;
+		var currentPosition = parentFolderOrProject.Folders.IndexOf(folder);
+		var insertionPosition = GetMovePosition(parentFolderOrProject, folder);
+		parentFolderOrProject.Files.Move(currentPosition, insertionPosition);
 
 		var stack = new Stack<SharpIdeFolder>();
 		stack.Push(folder);
@@ -157,11 +163,18 @@ public class SharpIdeSolutionModificationService(FileChangedService fileChangedS
 		return correctInsertionPosition;
 	}
 
-	private static int GetMovePosition(IFolderOrProject parentNode, SharpIdeFile sharpIdeFile)
+	private static int GetMovePosition(IFolderOrProject parentNode, IFileOrFolder fileOrFolder)
 	{
-		var correctInsertionPosition = parentNode.Files.list
-			.FindAll(x => x != sharpIdeFile) // TODO: Investigate allocations
-			.BinarySearch(sharpIdeFile, SharpIdeFileComparer.Instance);
+		var correctInsertionPosition = fileOrFolder switch
+		{
+			SharpIdeFile f => parentNode.Files.list
+				.FindAll(x => x != f) // TODO: Investigate allocations
+				.BinarySearch(f, SharpIdeFileComparer.Instance),
+			SharpIdeFolder d => parentNode.Folders.list
+				.FindAll(x => x != d) // TODO: Investigate allocations
+				.BinarySearch(d, SharpIdeFolderComparer.Instance),
+			_ => throw new InvalidOperationException("Unknown file or folder type")
+		};
 
 		if (correctInsertionPosition < 0)
 		{
