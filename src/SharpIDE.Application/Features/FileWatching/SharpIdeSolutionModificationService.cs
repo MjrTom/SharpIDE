@@ -107,7 +107,7 @@ public class SharpIdeSolutionModificationService(FileChangedService fileChangedS
 		var parentFolderOrProject = (IFolderOrProject)folder.Parent;
 		var currentPosition = parentFolderOrProject.Folders.IndexOf(folder);
 		var insertionPosition = GetMovePosition(parentFolderOrProject, folder);
-		parentFolderOrProject.Files.Move(currentPosition, insertionPosition);
+		if (currentPosition != insertionPosition) parentFolderOrProject.Files.Move(currentPosition, insertionPosition);
 
 		var stack = new Stack<SharpIdeFolder>();
 		stack.Push(folder);
@@ -219,7 +219,7 @@ public class SharpIdeSolutionModificationService(FileChangedService fileChangedS
 		var parentFolderOrProject = (IFolderOrProject)fileToRename.Parent;
 		var currentPosition = parentFolderOrProject.Files.IndexOf(fileToRename);
 		var insertionPosition = GetMovePosition(parentFolderOrProject, fileToRename);
-		parentFolderOrProject.Files.Move(currentPosition, insertionPosition);
+		if (currentPosition != insertionPosition) parentFolderOrProject.Files.Move(currentPosition, insertionPosition);
 		await _fileChangedService.SharpIdeFileRenamed(fileToRename, oldPath);
 		return fileToRename;
 	}
