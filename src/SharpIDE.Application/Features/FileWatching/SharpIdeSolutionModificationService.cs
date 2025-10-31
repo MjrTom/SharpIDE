@@ -20,15 +20,7 @@ public class SharpIdeSolutionModificationService(FileChangedService fileChangedS
 		var allFolders = new ConcurrentBag<SharpIdeFolder>();
 		var sharpIdeFolder = new SharpIdeFolder(new DirectoryInfo(addedDirectoryPath), parentNode, allFiles, allFolders);
 
-		var correctInsertionPosition = parentNode.Folders.list.BinarySearch(sharpIdeFolder, SharpIdeFolderComparer.Instance);
-		if (correctInsertionPosition < 0)
-		{
-			correctInsertionPosition = ~correctInsertionPosition;
-		}
-		else
-		{
-			throw new InvalidOperationException("Folder already exists in the containing folder or project");
-		}
+		var correctInsertionPosition = GetInsertionPosition(parentNode, sharpIdeFolder);
 
 		parentNode.Folders.Insert(correctInsertionPosition, sharpIdeFolder);
 		SolutionModel.AllFolders.AddRange((IEnumerable<SharpIdeFolder>)[sharpIdeFolder, ..allFolders]);
@@ -145,9 +137,14 @@ public class SharpIdeSolutionModificationService(FileChangedService fileChangedS
 		return sharpIdeFile;
 	}
 
-	private static int GetInsertionPosition(IFolderOrProject parentNode, SharpIdeFile sharpIdeFile)
+	private static int GetInsertionPosition(IFolderOrProject parentNode, IFileOrFolder fileOrFolder)
 	{
-		var correctInsertionPosition = parentNode.Files.list.BinarySearch(sharpIdeFile, SharpIdeFileComparer.Instance);
+		var correctInsertionPosition = fileOrFolder switch
+		{
+			SharpIdeFile f => parentNode.Files.list.BinarySearch(f, SharpIdeFileComparer.Instance),
+			SharpIdeFolder d => parentNode.Folders.list.BinarySearch(d, SharpIdeFolderComparer.Instance),
+			_ => throw new InvalidOperationException("Unknown file or folder type")
+		};
 		if (correctInsertionPosition < 0)
 		{
 			correctInsertionPosition = ~correctInsertionPosition;
@@ -192,7 +189,8 @@ public class SharpIdeSolutionModificationService(FileChangedService fileChangedS
 		var newFilePath = Path.Combine(destinationParentNode.ChildNodeBasePath, fileToMove.Name);
 		var parentFolderOrProject = (IFolderOrProject)fileToMove.Parent;
 		parentFolderOrProject.Files.Remove(fileToMove);
-		destinationParentNode.Files.Add(fileToMove);
+		var insertionIndex = GetInsertionPosition(destinationParentNode, fileToMove);
+		destinationParentNode.Files.Insert(insertionIndex, fileToMove);
 		fileToMove.Parent = destinationParentNode;
 		fileToMove.Path = newFilePath;
 		await _fileChangedService.SharpIdeFileMoved(fileToMove, oldPath);
