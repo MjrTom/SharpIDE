@@ -40,8 +40,8 @@ public partial class NugetPanel : Control
         _nugetPackageDetails = GetNode<NugetPackageDetails>("%NugetPackageDetails");
         _installedPackagesSlnOrProjectNameLabel = GetNode<Label>("%InstalledPackagesSlnOrProjectNameLabel");
         _installedPackagesResultCountLabel = GetNode<Label>("%InstalledPackagesResultCountLabel");
-        //_implicitlyInstalledPackagesSlnOrProjectNameLabel = GetNode<Label>("%ImplicitlyInstalledPackagesSlnOrProjectNameLabel");
-        //_implicitlyInstalledPackagesResultCountLabel = GetNode<Label>("%ImplicitlyInstalledPackagesResultCountLabel");
+        _implicitlyInstalledPackagesSlnOrProjectNameLabel = GetNode<Label>("%ImplicitlyInstalledPackagesSlnOrProjectNameLabel");
+        _implicitlyInstalledPackagesResultCountLabel = GetNode<Label>("%ImplicitlyInstalledPackagesResultCountLabel");
         _nugetPackageDetails.Visible = false;
         _installedPackagesVboxContainer.QueueFreeChildren();
         _implicitlyInstalledPackagesItemList.QueueFreeChildren();
@@ -94,7 +94,8 @@ public partial class NugetPanel : Control
         };
         await this.InvokeAsync(() =>
         {
-            return _installedPackagesSlnOrProjectNameLabel.Text = text;
+            _installedPackagesSlnOrProjectNameLabel.Text = text;
+            _implicitlyInstalledPackagesSlnOrProjectNameLabel.Text = text;
         });
     }
 
