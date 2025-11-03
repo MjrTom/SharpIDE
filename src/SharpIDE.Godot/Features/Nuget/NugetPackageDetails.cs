@@ -1,4 +1,5 @@
 using Godot;
+using SharpIDE.Application.Features.Evaluation;
 using SharpIDE.Application.Features.Nuget;
 using SharpIDE.Application.Features.SolutionDiscovery.VsPersistence;
 
@@ -43,6 +44,7 @@ public partial class NugetPackageDetails : VBoxContainer
 		});
 		var (iconBytes, iconFormat) = await iconTask;
 		var imageTexture = ImageTextureHelper.GetImageTextureFromBytes(iconBytes, iconFormat) ?? _defaultIconTextureRect;
+		await SetProjects(package.InstalledNugetPackageInfo!.ProjectPackageReferences);
 		await this.InvokeAsync(() =>
 		{
 			_packageIconTextureRect.Texture = imageTexture;
@@ -58,12 +60,14 @@ public partial class NugetPackageDetails : VBoxContainer
 		});
 	}
 
-	public async Task SetProjects(HashSet<SharpIdeProjectModel> projects)
+	public async Task SetProjects(List<ProjectPackageReference> projectPackageReferences)
 	{
-		var scenes = projects.Select(s =>
+		var scenes = projectPackageReferences.Select(s =>
 		{
 			var scene = _packageDetailsProjectEntryScene.Instantiate<PackageDetailsProjectEntry>();
-			scene.ProjectModel = s;
+			scene.ProjectModel = s.Project;
+			scene.InstalledVersion = s.InstalledVersion;
+			scene.IsTransitive = s.IsTransitive;
 			return scene;
 		}).ToList();
 		await this.InvokeAsync(() =>

@@ -1,4 +1,5 @@
 using Godot;
+using NuGet.Versioning;
 using SharpIDE.Application.Features.SolutionDiscovery.VsPersistence;
 
 namespace SharpIDE.Godot.Features.Nuget;
@@ -9,7 +10,8 @@ public partial class PackageDetailsProjectEntry : MarginContainer
     private Label _installedVersionLabel = null!;
     
     public SharpIdeProjectModel ProjectModel { get; set; } = null!;
-    public string InstalledVersion { get; set; } = string.Empty;
+    public NuGetVersion? InstalledVersion { get; set; }
+    public bool IsTransitive { get; set; }
     public override void _Ready()
     {
         _projectNameLabel = GetNode<Label>("%ProjectNameLabel");;
@@ -21,6 +23,6 @@ public partial class PackageDetailsProjectEntry : MarginContainer
     {
         if (ProjectModel == null) return;
         _projectNameLabel.Text = ProjectModel.Name;
-        _installedVersionLabel.Text = InstalledVersion;
+        _installedVersionLabel.Text = IsTransitive ? $"({InstalledVersion?.ToNormalizedString()})" : InstalledVersion?.ToNormalizedString();
     }
 }
