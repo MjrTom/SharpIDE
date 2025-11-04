@@ -30,35 +30,30 @@ public class TestRunnerService
 		return allDiscoveredTestNodes;
 	}
 
+	public async Task RunTestsAsync(SharpIdeSolutionModel solutionModel, Func<TestNodeUpdate[], Task> func)
+	{
+		await Task.WhenAll(solutionModel.AllProjects.Select(s => s.MsBuildEvaluationProjectTask));
+		var testProjects = solutionModel.AllProjects.Where(p => p.IsMtpTestProject).ToList();
+		foreach (var testProject in testProjects)
+		{
+			await RunTestsAsync(testProject, func);
+		}
+	}
+
 	// Assumes it has already been built
-	public async Task RunTestsAsync(SharpIdeProjectModel project)
+	public async Task RunTestsAsync(SharpIdeProjectModel project, Func<TestNodeUpdate[], Task> func)
 	{
 		using var client = await GetInitialisedClientAsync(project);
 		List<TestNodeUpdate> testNodeUpdates = [];
-		var discoveryResponse = await client.DiscoverTestsAsync(Guid.NewGuid(), node =>
+		var discoveryResponse = await client.DiscoverTestsAsync(Guid.NewGuid(), async nodeUpdates =>
 		{
-			testNodeUpdates.AddRange(node);
-			return Task.CompletedTask;
+			testNodeUpdates.AddRange(nodeUpdates);
+			await func(nodeUpdates);
 		});
 		await discoveryResponse.WaitCompletionAsync();
 
-		Console.WriteLine($"Discovery finished: {testNodeUpdates.Count} tests discovered");
-		Console.WriteLine(string.Join(Environment.NewLine, testNodeUpdates.Select(n => n.Node.DisplayName)));
-
-		List <TestNodeUpdate> runResults = [];
-		ResponseListener runRequest = await client.RunTestsAsync(Guid.NewGuid(), testNodeUpdates.Select(x => x.Node).ToArray(), node =>
-		{
-			runResults.AddRange(node);
-			return Task.CompletedTask;
-		});
+		ResponseListener runRequest = await client.RunTestsAsync(Guid.NewGuid(), testNodeUpdates.Select(x => x.Node).ToArray(), func);
 		await runRequest.WaitCompletionAsync();
-
-
-		var passedCount = runResults.Where(tn => tn.Node.ExecutionState == ExecutionStates.Passed).Count();
-		var failedCount = runResults.Where(tn => tn.Node.ExecutionState == ExecutionStates.Failed).Count();
-		var skippedCount = runResults.Where(tn => tn.Node.ExecutionState == ExecutionStates.Skipped).Count();
-
-		Console.WriteLine($"Passed: {passedCount}; Skipped: {skippedCount}; Failed: {failedCount};");
 		await client.ExitAsync();
 	}
 

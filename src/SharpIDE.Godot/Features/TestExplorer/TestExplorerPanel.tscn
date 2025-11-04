@@ -1,7 +1,9 @@
-[gd_scene load_steps=3 format=3 uid="uid://hwdok1kch3b3"]
+[gd_scene load_steps=5 format=3 uid="uid://hwdok1kch3b3"]
 
 [ext_resource type="Script" uid="uid://8o78ti2hb0pu" path="res://Features/TestExplorer/TestExplorerPanel.cs" id="1_b5miy"]
 [ext_resource type="Texture2D" uid="uid://cmwkpdv6pxaai" path="res://Resources/refresh.svg" id="2_4bhqg"]
+[ext_resource type="Texture2D" uid="uid://bkty6563cthj8" path="res://Features/Run/Resources/Run.svg" id="3_b7h3i"]
+[ext_resource type="PackedScene" uid="uid://dt50f2of66dlt" path="res://Features/TestExplorer/TestNodeEntry.tscn" id="3_vj6ii"]
 
 [node name="TestExplorerPanel" type="Control"]
 layout_mode = 3
@@ -67,15 +69,30 @@ layout_mode = 2
 size_flags_horizontal = 3
 placeholder_text = "Search for a test"
 
-[node name="ScrollContainer" type="ScrollContainer" parent="VBoxContainer/MarginContainer2/HSplitContainer/VBoxContainer"]
+[node name="HBoxContainer2" type="HBoxContainer" parent="VBoxContainer/MarginContainer2/HSplitContainer/VBoxContainer"]
 layout_mode = 2
 size_flags_vertical = 3
 
-[node name="TestNodesVBoxContainer" type="VBoxContainer" parent="VBoxContainer/MarginContainer2/HSplitContainer/VBoxContainer/ScrollContainer"]
+[node name="VBoxContainer" type="VBoxContainer" parent="VBoxContainer/MarginContainer2/HSplitContainer/VBoxContainer/HBoxContainer2"]
+layout_mode = 2
+
+[node name="RunAllTestsButton" type="Button" parent="VBoxContainer/MarginContainer2/HSplitContainer/VBoxContainer/HBoxContainer2/VBoxContainer"]
+unique_name_in_owner = true
+layout_mode = 2
+icon = ExtResource("3_b7h3i")
+
+[node name="ScrollContainer" type="ScrollContainer" parent="VBoxContainer/MarginContainer2/HSplitContainer/VBoxContainer/HBoxContainer2"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="TestNodesVBoxContainer" type="VBoxContainer" parent="VBoxContainer/MarginContainer2/HSplitContainer/VBoxContainer/HBoxContainer2/ScrollContainer"]
 unique_name_in_owner = true
 layout_mode = 2
 size_flags_horizontal = 3
 size_flags_vertical = 3
+
+[node name="TestNodeEntry" parent="VBoxContainer/MarginContainer2/HSplitContainer/VBoxContainer/HBoxContainer2/ScrollContainer/TestNodesVBoxContainer" instance=ExtResource("3_vj6ii")]
+layout_mode = 2
 
 [node name="VBoxContainer2" type="VBoxContainer" parent="VBoxContainer/MarginContainer2/HSplitContainer"]
 layout_mode = 2
