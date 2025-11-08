@@ -41,6 +41,7 @@ public class DebuggingService
 		process.Start();
 
 		var debugProtocolHost = new DebugProtocolHost(process.StandardInput.BaseStream, process.StandardOutput.BaseStream, false);
+		var initializedEventTcs = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
 		_debugProtocolHost = debugProtocolHost;
 		debugProtocolHost.LogMessage += (sender, args) =>
 		{
@@ -61,6 +62,10 @@ public class DebuggingService
 		debugProtocolHost.RegisterEventType<OutputEvent>(@event =>
 		{
 			;
+		});
+		debugProtocolHost.RegisterEventType<InitializedEvent>(@event =>
+		{
+			initializedEventTcs.SetResult();
 		});
 		debugProtocolHost.RegisterEventType<ExitedEvent>(async void (@event) =>
 		{
@@ -117,6 +122,8 @@ public class DebuggingService
 			}
 		};
 		debugProtocolHost.SendRequestSync(attachRequest);
+		// AttachRequest -> HandshakeRequest -> InitializedEvent
+		await initializedEventTcs.Task;
 
 		foreach (var breakpoint in breakpointsByFile)
 		{
