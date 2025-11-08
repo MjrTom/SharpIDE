@@ -35,5 +35,10 @@ A modern, cross platform & open source IDE for .NET
 ## Test Explorer (WIP)
 <img width="1630" height="895" alt="image" src="https://github.com/user-attachments/assets/b76efd8e-6f57-42a4-b2dc-8fd3e907db83" />
 
+## Solution Picker
+<img width="842" height="498" alt="image" src="https://github.com/user-attachments/assets/a6c67228-2aeb-4e3f-9ae8-8b91e4d7da68" />
+
+
+
 ### Building
 if using a preview .NET SDK, ensure that `DOTNET_ROLL_FORWARD_TO_PRERELEASE` is set to `1` as per https://github.com/godotengine/godot/issues/98334, otherwise it will blow up.
