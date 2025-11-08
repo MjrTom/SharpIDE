@@ -38,6 +38,7 @@ public partial class ThreadsVariablesSubTab : Control
 		}).ToList(); 
 		await this.InvokeAsync(() =>
 		{
+			_threadsVboxContainer.QueueFreeChildren();
 			foreach (var scene in threadScenes)
 			{
 				_threadsVboxContainer.AddChild(scene);
@@ -55,6 +56,7 @@ public partial class ThreadsVariablesSubTab : Control
 		}).ToList();
 		await this.InvokeAsync(() =>
 		{
+			_stackFramesVboxContainer.QueueFreeChildren();
 			foreach (var scene in stackFrameScenes)
 			{
 				_stackFramesVboxContainer.AddChild(scene);
@@ -71,6 +73,7 @@ public partial class ThreadsVariablesSubTab : Control
 		
 		await this.InvokeAsync(() =>
 		{
+			_variablesVboxContainer.QueueFreeChildren();
 			foreach (var scene in variableScenes)
 			{
 				_variablesVboxContainer.AddChild(scene);
