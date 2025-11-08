@@ -20,9 +20,9 @@ public partial class ThreadsVariablesSubTab : Control
 
 	public override void _Ready()
 	{
-		_threadsVboxContainer = GetNode<VBoxContainer>("%ThreadsPanel/VBoxContainer");
-		_stackFramesVboxContainer = GetNode<VBoxContainer>("%StackFramesPanel/VBoxContainer");
-		_variablesVboxContainer = GetNode<VBoxContainer>("%VariablesPanel/VBoxContainer");
+		_threadsVboxContainer = GetNode<VBoxContainer>("%ThreadsVBoxContainer");
+		_stackFramesVboxContainer = GetNode<VBoxContainer>("%StackFramesVBoxContainer");
+		_variablesVboxContainer = GetNode<VBoxContainer>("%VariablesVBoxContainer");
 		GlobalEvents.Instance.DebuggerExecutionStopped.Subscribe(OnDebuggerExecutionStopped);
 		
 	}
