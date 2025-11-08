@@ -62,6 +62,6 @@ public partial class RunMenuItem : HBoxContainer
     private async void OnDebugButtonPressed()
     {
         GodotGlobalEvents.Instance.BottomPanelTabExternallySelected.InvokeParallelFireAndForget(BottomPanelType.Debug);
-        await _runService.RunProject(Project, true).ConfigureAwait(false);
+        await _runService.RunProject(Project, true, Singletons.AppState.IdeSettings.DebuggerExecutablePath).ConfigureAwait(false);
     }
 }

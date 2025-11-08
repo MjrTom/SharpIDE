@@ -19,7 +19,7 @@ public class RunService(ILogger<RunService> logger)
 
 	private readonly ILogger<RunService> _logger = logger;
 
-	public async Task RunProject(SharpIdeProjectModel project, bool isDebug = false)
+	public async Task RunProject(SharpIdeProjectModel project, bool isDebug = false, string? debuggerExecutablePath = null)
 	{
 		Guard.Against.Null(project, nameof(project));
 		Guard.Against.NullOrWhiteSpace(project.FilePath, nameof(project.FilePath), "Project file path cannot be null or empty.");
@@ -90,7 +90,7 @@ public class RunService(ILogger<RunService> logger)
 				// Attach debugger (which internally uses a DiagnosticClient to resume startup)
 				var debugger = new Debugger { Project = project, ProcessId = process.ProcessId };
 				_debugger = debugger;
-				await debugger.Attach(project.RunningCancellationTokenSource.Token, Breakpoints.ToDictionary()).ConfigureAwait(false);
+				await debugger.Attach(debuggerExecutablePath, Breakpoints.ToDictionary(), project.RunningCancellationTokenSource.Token).ConfigureAwait(false);
 			}
 
 			project.Running = true;

@@ -15,17 +15,22 @@ namespace SharpIDE.Application.Features.Debugging;
 public class DebuggingService
 {
 	private DebugProtocolHost _debugProtocolHost = null!;
-	public async Task Attach(int debuggeeProcessId, Dictionary<SharpIdeFile, List<Breakpoint>> breakpointsByFile, CancellationToken cancellationToken = default)
+	public async Task Attach(int debuggeeProcessId, string? debuggerExecutablePath, Dictionary<SharpIdeFile, List<Breakpoint>> breakpointsByFile, CancellationToken cancellationToken = default)
 	{
 		Guard.Against.NegativeOrZero(debuggeeProcessId, nameof(debuggeeProcessId), "Process ID must be a positive integer.");
 		await Task.CompletedTask.ConfigureAwait(ConfigureAwaitOptions.ForceYielding);
+
+		if (string.IsNullOrWhiteSpace(debuggerExecutablePath))
+		{
+			throw new ArgumentNullException(nameof(debuggerExecutablePath), "Debugger executable path cannot be null or empty.");
+		}
 
 		var process = new Process
 		{
 			StartInfo = new ProcessStartInfo
 			{
 				//FileName = @"C:\Users\Matthew\Downloads\netcoredbg-win64\netcoredbg\netcoredbg.exe",
-				FileName = @"C:\Users\Matthew\.vscode-insiders\extensions\ms-dotnettools.csharp-2.90.51-win32-x64\.debugger\x86_64\vsdbg.exe",
+				FileName = debuggerExecutablePath,
 				Arguments = "--interpreter=vscode",
 				RedirectStandardInput = true,
 				RedirectStandardOutput = true,
