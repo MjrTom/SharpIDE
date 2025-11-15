@@ -24,6 +24,8 @@ builder.Services.AddParallelPipelines(
 builder.Services
 	.AddStep<RestoreAndBuildStep>()
 	.AddStep<CreateWindowsRelease>()
+	.AddStep<CreateLinuxRelease>()
+	.AddStep<CreateMacosRelease>()
 	.AddStep<CreateGithubRelease>()
 	;
 
