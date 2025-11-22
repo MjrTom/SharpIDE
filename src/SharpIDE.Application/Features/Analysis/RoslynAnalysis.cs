@@ -996,16 +996,22 @@ public class RoslynAnalysis(ILogger<RoslynAnalysis> logger, BuildService buildSe
 
 	public async Task MoveDocument(SharpIdeFile sharpIdeFile, string oldFilePath)
 	{
-		var document = _workspace!.CurrentSolution.GetDocumentIdsWithFilePath(oldFilePath).Single();
-		var updatedSolution = _workspace.CurrentSolution.WithDocumentFilePath(document, sharpIdeFile.Path);
-		_workspace.TryApplyChanges(updatedSolution);
+		var documentId = _workspace!.CurrentSolution.GetDocumentIdsWithFilePath(oldFilePath).Single();
+		_workspace.SetCurrentSolution(oldSolution =>
+		{
+			var newSolution = oldSolution.WithDocumentFilePath(documentId, sharpIdeFile.Path);
+			return newSolution;
+		}, WorkspaceChangeKind.DocumentInfoChanged, documentId: documentId);
 	}
 
 	public async Task RenameDocument(SharpIdeFile sharpIdeFile, string oldFilePath)
 	{
 		var documentId = _workspace!.CurrentSolution.GetDocumentIdsWithFilePath(oldFilePath).Single();
-		var updatedSolution = _workspace.CurrentSolution.WithDocumentName(documentId, sharpIdeFile.Name);
-		_workspace.TryApplyChanges(updatedSolution);
+		_workspace.SetCurrentSolution(oldSolution =>
+		{
+			var newSolution = oldSolution.WithDocumentName(documentId, sharpIdeFile.Name);
+			return newSolution;
+		}, WorkspaceChangeKind.DocumentInfoChanged, documentId: documentId);
 	}
 
 	public async Task<string> GetOutputDllPathForProject(SharpIdeProjectModel projectModel)
