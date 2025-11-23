@@ -920,7 +920,8 @@ public class RoslynAnalysis(ILogger<RoslynAnalysis> logger, BuildService buildSe
 		return null;
 	}
 
-	public async Task UpdateDocument(SharpIdeFile fileModel, string newContent)
+	// Returns true if the document was found and updated, otherwise false
+	public async Task<bool> UpdateDocument(SharpIdeFile fileModel, string newContent)
 	{
 		using var _ = SharpIdeOtel.Source.StartActivity($"{nameof(RoslynAnalysis)}.{nameof(UpdateDocument)}");
 		await _solutionLoadedTcs.Task;
@@ -937,7 +938,7 @@ public class RoslynAnalysis(ILogger<RoslynAnalysis> logger, BuildService buildSe
 		if (documentId is null)
 		{
 			_logger.LogWarning("UpdateDocument failed: Document '{DocumentPath}' not found in workspace", fileModel.Path);
-			return;
+			return false;
 		}
 
 		var newText = SourceText.From(newContent, Encoding.UTF8);
@@ -957,6 +958,11 @@ public class RoslynAnalysis(ILogger<RoslynAnalysis> logger, BuildService buildSe
 		{
 			_workspace.OnAnalyzerConfigDocumentTextChanged(documentId, newText, PreservationMode.PreserveIdentity);
 		}
+		else
+		{
+			return false;
+		}
+		return true;
 	}
 
 	public async Task AddDocument(SharpIdeFile fileModel, string content)
@@ -1022,7 +1028,7 @@ public class RoslynAnalysis(ILogger<RoslynAnalysis> logger, BuildService buildSe
 		}, WorkspaceChangeKind.DocumentAdded, documentId: documentId);
 	}
 
-	public async Task RemoveDocument(SharpIdeFile fileModel)
+	public async Task<bool> RemoveDocument(SharpIdeFile fileModel)
 	{
 		using var _ = SharpIdeOtel.Source.StartActivity($"{nameof(RoslynAnalysis)}.{nameof(AddDocument)}");
 		await _solutionLoadedTcs.Task;
@@ -1038,7 +1044,7 @@ public class RoslynAnalysis(ILogger<RoslynAnalysis> logger, BuildService buildSe
 		if (documentId is null)
 		{
 			_logger.LogWarning("RemoveDocument failed: Document '{DocumentPath}' not found in workspace", fileModel.Path);
-			return;
+			return false;
 		}
 		var documentKind = _workspace.CurrentSolution.GetDocumentKind(documentId);
 		Guard.Against.Null(documentKind);
@@ -1050,6 +1056,7 @@ public class RoslynAnalysis(ILogger<RoslynAnalysis> logger, BuildService buildSe
 			case TextDocumentKind.AnalyzerConfigDocument: _workspace.OnAnalyzerConfigDocumentRemoved(documentId); break;
 			default: throw new ArgumentOutOfRangeException(nameof(documentKind));
 		}
+		return true;
 	}
 
 	public async Task MoveDocument(SharpIdeFile sharpIdeFile, string oldFilePath)

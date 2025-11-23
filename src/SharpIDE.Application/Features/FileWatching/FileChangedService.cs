@@ -132,7 +132,8 @@ public class FileChangedService
 
 	private async Task HandleWorkspaceFileChanged(SharpIdeFile file, string newContents)
 	{
-		await _roslynAnalysis.UpdateDocument(file, newContents);
+		var fileUpdatedInWorkspace = await _roslynAnalysis.UpdateDocument(file, newContents);
+		if (fileUpdatedInWorkspace is false) return;
 		GlobalEvents.Instance.SolutionAltered.InvokeParallelFireAndForget();
 		_updateSolutionDiagnosticsQueue.AddWork();
 	}
@@ -146,7 +147,8 @@ public class FileChangedService
 
 	private async Task HandleWorkspaceFileRemoved(SharpIdeFile file)
 	{
-		await _roslynAnalysis.RemoveDocument(file);
+		var success = await _roslynAnalysis.RemoveDocument(file);
+		if (success is false) return;
 		GlobalEvents.Instance.SolutionAltered.InvokeParallelFireAndForget();
 		_updateSolutionDiagnosticsQueue.AddWork();
 	}
