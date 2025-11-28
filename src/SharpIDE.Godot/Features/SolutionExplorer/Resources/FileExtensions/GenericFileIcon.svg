@@ -23,9 +23,9 @@
      inkscape:pageopacity="0"
      inkscape:pagecheckerboard="0"
      inkscape:deskcolor="#505050"
-     inkscape:zoom="34.383068"
-     inkscape:cx="8.4925522"
-     inkscape:cy="11.735427"
+     inkscape:zoom="48.625001"
+     inkscape:cx="12.791774"
+     inkscape:cy="9.8817479"
      inkscape:window-width="2560"
      inkscape:window-height="1369"
      inkscape:window-x="-8"
@@ -40,4 +40,8 @@
      filter="url(#glow)"
      id="path1"
      sodipodi:nodetypes="csssssscc"
-     style="stroke-width:0.9;stroke-dasharray:none" /></svg>
+     style="stroke-width:1;stroke-dasharray:none" /><path
+     style="fill:none;fill-opacity:1;stroke:#dfe5e9;stroke-width:1;stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:none;stroke-opacity:1"
+     d="m 5.2868181,6.8241971 4.558144,0.010562 7.756e-4,-4.0805178"
+     id="path2"
+     sodipodi:nodetypes="ccc" /></svg>
