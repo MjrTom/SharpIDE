@@ -25,9 +25,9 @@
      inkscape:pageopacity="0"
      inkscape:pagecheckerboard="0"
      inkscape:deskcolor="#505050"
-     inkscape:zoom="24.3125"
-     inkscape:cx="-2.9203085"
-     inkscape:cy="11.825193"
+     inkscape:zoom="32"
+     inkscape:cx="6.09375"
+     inkscape:cy="9.953125"
      inkscape:window-width="2560"
      inkscape:window-height="1369"
      inkscape:window-x="-8"
@@ -43,13 +43,14 @@
      font-size="16px"
      font-weight="700"
      id="text1"
-     style="font-size:21.3333px;letter-spacing:-1px;word-spacing:0px;display:none;fill:#c77d55;fill-opacity:1"><tspan
-       style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:condensed;font-size:21.3333px;font-family:Arial;-inkscape-font-specification:'Arial Condensed';letter-spacing:-1px;word-spacing:0px"
+     style="font-size:21.3333px;letter-spacing:0px;word-spacing:0px;display:none;fill:#c77d55;fill-opacity:1"><tspan
+       style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:condensed;font-size:21.3333px;font-family:Arial;-inkscape-font-specification:'Arial Condensed';letter-spacing:0px;word-spacing:0px"
        id="tspan1"
        dx="0">&lt;/&gt;</tspan></text>
   <path
-     style="font-stretch:condensed;font-size:21.3333px;font-family:Arial;-inkscape-font-specification:'Arial Condensed';letter-spacing:-1px;word-spacing:0px;dominant-baseline:middle;text-anchor:middle;fill:#c77d55"
-     d="M 1.3125188,12.958332 V 11.208335 L 9.6041724,6.937508 V 8.8020884 L 3.0312661,12.09375 9.6041724,15.416661 v 1.864581 z M 9.5937541,19.895821 13.218748,4.1041791 H 14.45833 L 10.822919,19.895821 Z m 13.0937279,-6.937489 -8.291654,4.32291 V 15.416661 L 20.968734,12.09375 14.395828,8.8020884 V 6.937508 l 8.291654,4.270827 z"
-     id="text1-1"
-     aria-label="&lt;/&gt;" />
+     style="font-stretch:condensed;font-size:21.3333px;font-family:Arial;-inkscape-font-specification:'Arial Condensed';letter-spacing:0px;word-spacing:0px;dominant-baseline:middle;text-anchor:middle;fill:#c77d55;stroke-width:1;stroke-dasharray:none"
+     d="M 0.84376882,12.914771 V 11.24432 L 8.7585285,7.1676216 v 1.7798266 l -6.2741374,3.1420408 6.2741374,3.171869 v 1.779827 z M 9.3998625,19.536919 12.865056,4.4630806 h 1.779826 L 11.179689,19.536919 Z m 13.7563695,-6.622148 -7.91476,4.126414 V 15.261358 L 21.515609,12.089489 15.241472,8.9474482 V 7.1676216 l 7.91476,4.0766984 z"
+     id="text1-4"
+     aria-label="&lt;/&gt;"
+     sodipodi:nodetypes="ccccccccccccccccccccc" />
 </svg>
