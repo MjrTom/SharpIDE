@@ -14,6 +14,8 @@ config/name="SharpIDE"
 run/main_scene="uid://b70jhun5a4las"
 config/features=PackedStringArray("4.5", "C#", "Forward Plus")
 run/max_fps=157
+boot_splash/fullsize=false
+boot_splash/image="uid://c58xmy2syss8s"
 config/icon="uid://tpjfx7mo6cwj"
 
 [autoload]
