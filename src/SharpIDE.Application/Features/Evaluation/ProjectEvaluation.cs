@@ -132,6 +132,10 @@ public class InstalledPackage
 {
 	public required string Name { get; set; }
 	//public required NuGetVersion LatestVersion { get; set; }
+
+	/// <summary>
+	/// Projects that reference this package
+	/// </summary>
 	public required List<ProjectPackageReference> ProjectPackageReferences { get; set; }
 }
 
