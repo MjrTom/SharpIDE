@@ -25,6 +25,7 @@ public partial class IdeWindow : Control
         GD.Print("IdeWindow _Ready called");
         ResourceLoader.LoadThreadedRequest(SlnPickerScenePath);
         ResourceLoader.LoadThreadedRequest(IdeRootScenePath);
+        SetMaxFpsForMonitor();
         // Godot doesn't have an easy equivalent of launchsettings.json, and we also want this to be set for published builds
         Environment.SetEnvironmentVariable("MSBUILD_PARSE_SLN_WITH_SOLUTIONPERSISTENCE", "1");
         SharpIdeMsbuildLocator.Register();
@@ -44,6 +45,16 @@ public partial class IdeWindow : Control
         // GC.WaitForPendingFinalizers();
         // GC.Collect();
         // PrintOrphanNodes();
+    }
+
+    public void SetMaxFpsForMonitor()
+    {
+        // Keep max fps below display refresh rate for gsync, to avoid input lag. Currently does not handle window moving across monitors
+        var refreshRate = (int)DisplayServer.ScreenGetRefreshRate();
+        var refreshRateBelowCap = refreshRate - (refreshRate * refreshRate) / 3600.0;
+        var refreshRateBelowCapRoundedDownToInt = (int)refreshRateBelowCap;
+        GD.Print($"Detected display refresh rate: {refreshRate} Hz, setting max FPS to {refreshRateBelowCapRoundedDownToInt} Hz");
+        Engine.MaxFps = refreshRateBelowCapRoundedDownToInt;
     }
     
     public void PickSolution(bool fullscreen = false)
