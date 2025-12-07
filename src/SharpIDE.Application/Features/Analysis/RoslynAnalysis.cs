@@ -381,7 +381,6 @@ public class RoslynAnalysis(ILogger<RoslynAnalysis> logger, BuildService buildSe
 		if (fileModel.IsRoslynWorkspaceFile is false) return [];
 		using var _ = SharpIdeOtel.Source.StartActivity($"{nameof(RoslynAnalysis)}.{nameof(GetDocumentDiagnostics)}");
 		await _solutionLoadedTcs.Task;
-		if (fileModel.IsRoslynWorkspaceFile is false) return [];
 
 		var document = await GetDocumentForSharpIdeFile(fileModel, cancellationToken);
 		Guard.Against.Null(document, nameof(document));
@@ -406,7 +405,6 @@ public class RoslynAnalysis(ILogger<RoslynAnalysis> logger, BuildService buildSe
 		if (fileModel.IsRoslynWorkspaceFile is false) return [];
 		using var _ = SharpIdeOtel.Source.StartActivity($"{nameof(RoslynAnalysis)}.{nameof(GetDocumentDiagnostics)}");
 		await _solutionLoadedTcs.Task;
-		if (fileModel.IsRoslynWorkspaceFile is false) return [];
 
 		var document = await GetDocumentForSharpIdeFile(fileModel, cancellationToken);
 		Guard.Against.Null(document, nameof(document));
