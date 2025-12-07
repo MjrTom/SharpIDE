@@ -1,6 +1,7 @@
 ﻿using Godot;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.Text;
+using Roslyn.Utilities;
 using Timer = Godot.Timer;
 
 namespace SharpIDE.Godot.Features.CodeEditor;
@@ -23,12 +24,19 @@ public partial class SharpIdeCodeEdit
         var lineHeight = GetLineHeight();
         GD.Print($"Symbol hovered: {symbol} at line {line}, column {column}");
 
-        var (roslynSymbol, linePositionSpan) = await _roslynAnalysis.LookupSymbol(_currentFile, new LinePosition((int)line, (int)column));
+        var linePosition = new LinePosition((int)line, (int)column);
+        var (roslynSymbol, linePositionSpan) = await _roslynAnalysis.LookupSymbol(_currentFile, linePosition);
         if (roslynSymbol is null || linePositionSpan is null)
         {
             return;
         }
 
+        
+        var diagnostics = _fileDiagnostics.AsEnumerable().Concat(_fileAnalyzerDiagnostics).Concat(_projectDiagnosticsForFile);
+        var diagnosticsForLinePosition = diagnostics.FirstOrNull(s => s.Span.Start.Line == linePosition.Line &&
+                                                                      s.Span.Start.Character <= linePosition.Character &&
+                                                                      s.Span.End.Character >= linePosition.Character);
+        
         var symbolNameHoverWindow = new Window();
         symbolNameHoverWindow.WrapControls = true;
         symbolNameHoverWindow.Unresizable = true;
@@ -123,6 +131,21 @@ public partial class SharpIdeCodeEdit
         };
         var panel = new PanelContainer();
         panel.AddThemeStyleboxOverride(ThemeStringNames.Panel, styleBox);
+        
+        var diagnosticNode = diagnosticsForLinePosition is not null
+            ? SymbolInfoComponents.GetDiagnostic(diagnosticsForLinePosition.Value)
+            : null;
+        diagnosticNode?.FitContent = true;
+        diagnosticNode?.AutowrapMode = TextServer.AutowrapMode.Off;
+        diagnosticNode?.SetAnchorsPreset(Control.LayoutPreset.FullRect);
+        var diagnosticPanel = diagnosticNode switch
+        {
+            not null => new PanelContainer(),
+            _ => null
+        };
+        diagnosticPanel?.AddThemeStyleboxOverride(ThemeStringNames.Panel, styleBox);
+        diagnosticPanel?.AddChild(diagnosticNode);
+        
 
         var symbolInfoNode = roslynSymbol switch
         {
@@ -141,6 +164,7 @@ public partial class SharpIdeCodeEdit
         panel.AddChild(symbolInfoNode);
         var vboxContainer = new VBoxContainer();
         vboxContainer.AddThemeConstantOverride(ThemeStringNames.Separation, 0);
+        if (diagnosticPanel is not null) vboxContainer.AddChild(diagnosticPanel);
         vboxContainer.AddChild(panel);
         tooltipWindow.AddChild(vboxContainer);
         tooltipWindow.ChildControlsChanged();
