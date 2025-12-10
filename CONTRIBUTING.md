@@ -1,5 +1,9 @@
 # Contributing to SharpIDE
 
+> ### Legal Notice
+
+> By contributing to this project, you agree that you have authored 100% of the content, that you have the necessary rights to the content, and that the content you contribute may be provided under the project license.
+
 ## Run Steps
 1. Ensure the .NET 10 SDK is installed
 2. Download the latest version of Godot from [godotengine.org/download](https://godotengine.org/download)
