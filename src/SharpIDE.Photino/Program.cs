@@ -9,11 +9,13 @@ using SharpIDE.Photino.Services;
 
 namespace SharpIDE.Photino;
 
+// This C# project is deprecated and serves as a reference only - see the SharpIDE.Godot project
 public class Program
 {
 	[STAThread]
 	public static void Main(string[] args)
 	{
+		throw new NotSupportedException("This project is deprecated and serves as a reference only - see the SharpIDE.Godot project");
 		var appBuilder = PhotinoBlazorAppBuilder.CreateDefault(args);
 
 		appBuilder.Services.AddLogging();//
