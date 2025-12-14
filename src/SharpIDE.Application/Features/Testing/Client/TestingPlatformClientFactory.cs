@@ -9,11 +9,11 @@ namespace SharpIDE.Application.Features.Testing.Client;
 
 public partial /* for codegen regx */ class TestingPlatformClientFactory
 {
-    private static readonly string Root = RootFinder.Find();
+    //private static readonly string Root = RootFinder.Find();
     private static readonly Dictionary<string, string> DefaultEnvironmentVariables = new()
     {
-        { "DOTNET_ROOT", $"{Root}/.dotnet" },
-        { "DOTNET_INSTALL_DIR", $"{Root}/.dotnet" },
+        //{ "DOTNET_ROOT", $"{Root}/.dotnet" },
+        //{ "DOTNET_INSTALL_DIR", $"{Root}/.dotnet" },
         { "DOTNET_SKIP_FIRST_TIME_EXPERIENCE", "1" },
         { "DOTNET_MULTILEVEL_LOOKUP", "0" },
     };
