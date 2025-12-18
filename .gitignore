@@ -3,6 +3,9 @@
 ##
 ## Get latest from https://github.com/github/gitignore/blob/master/VisualStudio.gitignore
 
+# The Godot editor creates this temporary file when open
+src/SharpIDE.Godot/addons/godot_xterm/lib/~libgodot-xterm.*.*
+
 # MacOS
 .DS_Store
 
