@@ -65,7 +65,17 @@ public partial class ThreadsVariablesSubTab
             var variableTypeDrawnSize = font.GetStringSize(variableTypeDisplayString, HorizontalAlignment.Left, -1, fontSize).X;
             currentX += variableTypeDrawnSize + padding;
         }
-        var variableValueDisplayString = isObjectType ? variable.Type : variable.Value;
+        var variableValueDisplayString = isObjectType ? GetObjectNameWithoutNamespace(variable.Type) : variable.Value;
         _variablesTree.DrawString(font, new Vector2(currentX, textYPos), variableValueDisplayString, HorizontalAlignment.Left, -1, fontSize, variableValueDisplayColour);
+    }
+    
+    private static string GetObjectNameWithoutNamespace(string fullTypeName)
+    {
+        // System.Collections.Generic.List<MyApp.Class> =>  List<Class>
+        var span = fullTypeName.AsSpan();
+        var firstGenericBracketIndex = span.IndexOf('<');  // returns -1 if not found
+        var slice = firstGenericBracketIndex is -1 ? span : span[..firstGenericBracketIndex];
+        var lastDotIndex = slice.LastIndexOf('.');
+        return lastDotIndex is -1 ? fullTypeName : span[(lastDotIndex + 1)..].ToString();
     }
 }
