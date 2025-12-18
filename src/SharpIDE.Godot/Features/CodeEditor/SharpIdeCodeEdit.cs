@@ -210,6 +210,25 @@ public partial class SharpIdeCodeEdit : CodeEdit
 	private void OnCaretChanged()
 	{
 		var caretPosition = GetCaretPosition(startAt1: true);
+		if (HasSelection())
+		{
+			// Probably should be debounced
+			var selectedText = GetSelectedText();
+			var lineBreakCount = 0;
+			var slashRsToRemove = 0;
+			
+			foreach (var c in selectedText.AsSpan())
+			{
+				if (c is '\n') lineBreakCount++;
+				else if (c is '\r') slashRsToRemove++;
+			}
+			var charLength = selectedText.Length - lineBreakCount - slashRsToRemove;
+			_editorCaretPositionService.SelectionInfo = (charLength, lineBreakCount);
+		}
+		else
+		{
+			_editorCaretPositionService.SelectionInfo = null;
+		}
 		_editorCaretPositionService.CaretPosition = caretPosition;
 	}
 
