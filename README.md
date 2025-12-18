@@ -30,7 +30,8 @@ SharpIDE is a WIP, and contributions are always welcome! If you encounter an err
 <img width="1544" height="867" alt="image" src="https://github.com/user-attachments/assets/53c32fd2-959d-4e72-9e50-83edaa008d8b" />
 
 ## Debug (WIP)
-<img width="1545" height="868" alt="image" src="https://github.com/user-attachments/assets/5f20f0d8-b31a-436c-b477-57961c10f558" />
+<img width="1513" height="880" alt="image" src="https://github.com/user-attachments/assets/9bd75fef-4198-41a8-a029-c4eea2e53a97" />
+
 
 ## Build
 <img width="1544" height="868" alt="image" src="https://github.com/user-attachments/assets/4906de77-f3a7-4dc6-8138-6a824ae3eb61" />
