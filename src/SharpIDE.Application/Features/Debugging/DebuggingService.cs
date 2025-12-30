@@ -80,33 +80,41 @@ public class DebuggingService
 		});
 		debugProtocolHost.RegisterEventType<StoppedEvent>(async void (@event) =>
 		{
-			await Task.CompletedTask.ConfigureAwait(ConfigureAwaitOptions.ForceYielding); // The VS Code Debug Protocol throws if you try to send a request from the dispatcher thread
-			var additionalProperties = @event.AdditionalProperties;
-			// source, line, column
-			if (additionalProperties.Count is not 0)
+			try
 			{
-				var filePath = additionalProperties?["source"]?["path"]!.Value<string>()!;
-				var line = (additionalProperties?["line"]?.Value<int>()!).Value;
-				var executionStopInfo = new ExecutionStopInfo { FilePath = filePath, Line = line, ThreadId = @event.ThreadId!.Value, Project = project };
-				GlobalEvents.Instance.DebuggerExecutionStopped.InvokeParallelFireAndForget(executionStopInfo);
-			}
-			else
-			{
-				// we need to get the top stack frame to find out where we are
-				var stackTraceRequest = new StackTraceRequest { ThreadId = @event.ThreadId!.Value, StartFrame = 0, Levels = 1 };
-				var stackTraceResponse = debugProtocolHost.SendRequestSync(stackTraceRequest);
-				var topFrame = stackTraceResponse.StackFrames.Single();
-				var filePath = topFrame.Source.Path;
-				var line = topFrame.Line;
-				var executionStopInfo = new ExecutionStopInfo { FilePath = filePath, Line = line, ThreadId = @event.ThreadId!.Value, Project = project };
-				GlobalEvents.Instance.DebuggerExecutionStopped.InvokeParallelFireAndForget(executionStopInfo);
-			}
+				await Task.CompletedTask.ConfigureAwait(ConfigureAwaitOptions.ForceYielding); // The VS Code Debug Protocol throws if you try to send a request from the dispatcher thread
+				var additionalProperties = @event.AdditionalProperties;
+				// source, line, column
+				if (additionalProperties.Count is not 0)
+				{
+					var filePath = additionalProperties?["source"]?["path"]!.Value<string>()!;
+					var line = (additionalProperties?["line"]?.Value<int>()!).Value;
+					var executionStopInfo = new ExecutionStopInfo { FilePath = filePath, Line = line, ThreadId = @event.ThreadId!.Value, Project = project };
+					GlobalEvents.Instance.DebuggerExecutionStopped.InvokeParallelFireAndForget(executionStopInfo);
+				}
+				else
+				{
+					// we need to get the top stack frame to find out where we are
+					var stackTraceRequest = new StackTraceRequest { ThreadId = @event.ThreadId!.Value, StartFrame = 0, Levels = 1 };
+					var stackTraceResponse = debugProtocolHost.SendRequestSync(stackTraceRequest);
+					var topFrame = stackTraceResponse.StackFrames.Single();
+					var filePath = topFrame.Source.Path;
+					var line = topFrame.Line;
+					var executionStopInfo = new ExecutionStopInfo { FilePath = filePath, Line = line, ThreadId = @event.ThreadId!.Value, Project = project };
+					GlobalEvents.Instance.DebuggerExecutionStopped.InvokeParallelFireAndForget(executionStopInfo);
+				}
 
-			if (@event.Reason is StoppedEvent.ReasonValue.Exception)
+				if (@event.Reason is StoppedEvent.ReasonValue.Exception)
+				{
+					Console.WriteLine("Stopped due to exception, continuing");
+					var continueRequest = new ContinueRequest { ThreadId = @event.ThreadId!.Value };
+					_debugProtocolHost.SendRequestSync(continueRequest);
+				}
+			}
+			catch (Exception e)
 			{
-				Console.WriteLine("Stopped due to exception, continuing");
-				var continueRequest = new ContinueRequest { ThreadId = @event.ThreadId!.Value };
-				_debugProtocolHost.SendRequestSync(continueRequest);
+				// TODO: use logger once this class is DI'd
+				Console.WriteLine($"Error handling StoppedEvent: {e}");
 			}
 		});
 		debugProtocolHost.VerifySynchronousOperationAllowed();
