@@ -121,6 +121,7 @@ public partial class IdeRoot : Control
 	private void OnRestoreSlnButtonPressed() => MsBuild(BuildType.Restore);
 	private async void MsBuild(BuildType buildType)
 	{
+		await Task.CompletedTask.ConfigureAwait(ConfigureAwaitOptions.ForceYielding);
 		GodotGlobalEvents.Instance.BottomPanelTabExternallySelected.InvokeParallelFireAndForget(BottomPanelType.Build);
 		await _buildService.MsBuildAsync(_solutionExplorerPanel.SolutionModel.FilePath, buildType);
 	}
