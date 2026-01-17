@@ -28,6 +28,7 @@ public partial class IdeRoot : Control
 	private Button _rebuildSlnButton = null!;
 	private Button _cleanSlnButton = null!;
 	private Button _restoreSlnButton = null!;
+	private TextureButton _cancelMsBuildActionButton = null!;
 	private SearchWindow _searchWindow = null!;
 	private SearchAllFilesWindow _searchAllFilesWindow = null!;
 	private CodeEditorPanel _codeEditorPanel = null!;
@@ -71,6 +72,7 @@ public partial class IdeRoot : Control
 		_rebuildSlnButton = GetNode<Button>("%RebuildSlnButton");
 		_cleanSlnButton = GetNode<Button>("%CleanSlnButton");
 		_restoreSlnButton = GetNode<Button>("%RestoreSlnButton");
+		_cancelMsBuildActionButton = GetNode<TextureButton>("%CancelMsBuildActionButton");
 		_runMenuPopup = GetNode<Popup>("%RunMenuPopup");
 		_runMenuButton = GetNode<Button>("%RunMenuButton");
 		_codeEditorPanel = GetNode<CodeEditorPanel>("%CodeEditorPanel");
@@ -88,6 +90,9 @@ public partial class IdeRoot : Control
 		_rebuildSlnButton.Pressed += OnRebuildSlnButtonPressed;
 		_cleanSlnButton.Pressed += OnCleanSlnButtonPressed;
 		_restoreSlnButton.Pressed += OnRestoreSlnButtonPressed;
+		_cancelMsBuildActionButton.Pressed += async () => await _buildService.CancelBuildAsync();
+		_buildService.BuildStarted.Subscribe(async () => await this.InvokeAsync(() => _cancelMsBuildActionButton.Disabled = false));
+		_buildService.BuildFinished.Subscribe(async () => await this.InvokeAsync(() => _cancelMsBuildActionButton.Disabled = true));
 		GodotGlobalEvents.Instance.BottomPanelVisibilityChangeRequested.Subscribe(async show => await this.InvokeAsync(() => _invertedVSplitContainer.InvertedSetCollapsed(!show)));
 		GetTree().GetRoot().FocusExited += OnFocusExited;
 		_nodeReadyTcs.SetResult();

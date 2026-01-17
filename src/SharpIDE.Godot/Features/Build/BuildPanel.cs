@@ -14,7 +14,7 @@ public partial class BuildPanel : Control
     public override void _Ready()
     {
         _terminal = new Terminal(GetNode<Control>("%Terminal"));
-        _buildService.BuildStarted += OnBuildStarted;
+        _buildService.BuildStarted.Subscribe(OnBuildStarted);
     }
 
     public override void _Process(double delta)
