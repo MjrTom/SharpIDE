@@ -30,6 +30,19 @@ public partial class RunMenuItem : HBoxContainer
         _buildAnimationPlayer = GetNode<AnimationPlayer>("AnimationPlayer");
         Project.ProjectStartedRunning.Subscribe(OnProjectStartedRunning);
         Project.ProjectStoppedRunning.Subscribe(OnProjectStoppedRunning);
+        Project.ProjectRunFailed.Subscribe(OnProjectRunFailed);
+    }
+
+    private async Task OnProjectRunFailed()
+    {
+        await this.InvokeAsync(() =>
+        {
+            _stopButton.Visible = false;
+            _debugButton.Visible = true;
+            _runButton.Visible = true;
+            _animatedTextureParentControl.Visible = false;
+            _buildAnimationPlayer.Stop();
+        });
     }
 
     private async Task OnProjectStoppedRunning()
@@ -62,10 +75,7 @@ public partial class RunMenuItem : HBoxContainer
     private StringName _buildAnimationName = "BuildingAnimation";
     private async void OnRunButtonPressed()
     {
-        _runButton.Visible = false;
-        _debugButton.Visible = false;
-        _animatedTextureParentControl.Visible = true;
-        _buildAnimationPlayer.Play(_buildAnimationName);
+        SetAttemptingRunState();
         await _runService.RunProject(Project).ConfigureAwait(false);
     }
     
@@ -76,6 +86,15 @@ public partial class RunMenuItem : HBoxContainer
             UseInMemorySharpDbg = Singletons.AppState.IdeSettings.DebuggerUseSharpDbg,
             DebuggerExecutablePath = Singletons.AppState.IdeSettings.DebuggerExecutablePath
         };
+        SetAttemptingRunState();
         await _runService.RunProject(Project, true, debuggerExecutableInfo).ConfigureAwait(false);
+    }
+    
+    private void SetAttemptingRunState()
+    {
+        _runButton.Visible = false;
+        _debugButton.Visible = false;
+        _animatedTextureParentControl.Visible = true;
+        _buildAnimationPlayer.Play(_buildAnimationName);
     }
 }

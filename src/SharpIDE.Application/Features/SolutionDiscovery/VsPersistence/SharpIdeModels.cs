@@ -135,6 +135,7 @@ public class SharpIdeProjectModel : ISharpIdeNode, IExpandableSharpIdeNode, IChi
 	public bool OpenInRunPanel { get; set; }
 	public Channel<byte[]>? RunningOutputChannel { get; set; }
 
+	public EventWrapper<Task> ProjectRunFailed { get; } = new(() => Task.CompletedTask);
 	public EventWrapper<Task> ProjectStartedRunning { get; } = new(() => Task.CompletedTask);
 	public EventWrapper<Task> ProjectStoppedRunning { get; } = new(() => Task.CompletedTask);
 

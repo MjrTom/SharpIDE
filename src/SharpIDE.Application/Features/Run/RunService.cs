@@ -42,9 +42,10 @@ public partial class RunService(ILogger<RunService> logger, RoslynAnalysis rosly
 			if (buildResult is not SharpIdeBuildResult.Success)
 			{
 				_logger.LogInformation("Build failed for project {ProjectName}. Aborting run/debug.", project.Name);
+				project.ProjectRunFailed.InvokeParallelFireAndForget();
 				return;
 			}
-			
+
 			project.RunningCancellationTokenSource = new CancellationTokenSource();
 
 			var launchProfiles = await LaunchSettingsParser.GetLaunchSettingsProfiles(project);
