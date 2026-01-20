@@ -278,7 +278,7 @@ public partial class SharpIdeCodeEdit : CodeEdit
 		Callable.From(() =>
 		{
 			GrabFocus();
-			CenterViewportToCaret();
+			AdjustViewportToCaret();
 		}).CallDeferred();
 	}
 
