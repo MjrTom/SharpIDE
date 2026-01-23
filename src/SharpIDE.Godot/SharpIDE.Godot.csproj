@@ -23,6 +23,7 @@
 
   <ItemGroup>
       <Publicize Include="Microsoft.CodeAnalysis.Workspaces" />
+      <Publicize Include="Microsoft.CodeAnalysis.Features" />
       <DoNotPublicize Include="Microsoft.CodeAnalysis.Workspaces:System.Linq.RoslynEnumerableExtensions" />
   </ItemGroup>
 
