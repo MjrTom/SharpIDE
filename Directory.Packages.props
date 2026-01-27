@@ -11,7 +11,7 @@
     <PackageVersion Include="AwesomeAssertions" Version="9.3.0" />
     <PackageVersion Include="BenchmarkDotNet" Version="0.15.6" />
     <PackageVersion Include="BlazorMonaco" Version="3.4.0" />
-    <PackageVersion Include="CliWrap" Version="3.9.0" />
+    <PackageVersion Include="CliWrap" Version="3.10.0" />
     <PackageVersion Include="ClrDebug" Version="0.3.4" />
     <PackageVersion Include="FileWatcherEx" Version="2.7.0" />
     <PackageVersion Include="Krafs.Publicizer" Version="2.3.0" />
