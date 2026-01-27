@@ -35,6 +35,8 @@ public partial class SharpIdeCodeEdit : CodeEdit
 	
 	private CustomHighlighter _syntaxHighlighter = new();
 	private PopupMenu _popupMenu = null!;
+	private CanvasItem _aboveCanvasItem = null!;
+	private Rid? _aboveCanvasItemRid = null!;
 
 	private ImmutableArray<SharpIdeDiagnostic> _fileDiagnostics = [];
 	private ImmutableArray<SharpIdeDiagnostic> _fileAnalyzerDiagnostics = [];
@@ -63,6 +65,9 @@ public partial class SharpIdeCodeEdit : CodeEdit
 	{
 		SyntaxHighlighter = _syntaxHighlighter;
 		_popupMenu = GetNode<PopupMenu>("CodeFixesMenu");
+		_aboveCanvasItem = GetNode<CanvasItem>("%AboveCanvasItem");
+		_aboveCanvasItemRid = _aboveCanvasItem.GetCanvasItem();
+		RenderingServer.Singleton.CanvasItemSetParent(_aboveCanvasItemRid.Value, GetCanvasItem());
 		_popupMenu.IdPressed += OnCodeFixSelected;
 		CustomCodeCompletionRequested.Subscribe(OnCodeCompletionRequested);
 		CodeFixesRequested += OnCodeFixesRequested;
@@ -363,8 +368,9 @@ public partial class SharpIdeCodeEdit : CodeEdit
 		{
 			endPos.X += 10;
 		}
-		DrawDashedLine(startPos, endPos, color, thickness);
-		//DrawLine(startPos, endPos, color, thickness);
+		
+		RenderingServer.Singleton.CanvasItemClear(_aboveCanvasItemRid!.Value);
+		RenderingServer.Singleton.DrawDashedLine(_aboveCanvasItemRid!.Value, startPos, endPos, color, thickness);
 	}
 	public override void _Draw()
 	{
