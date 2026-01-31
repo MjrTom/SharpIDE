@@ -227,19 +227,19 @@ public partial class SharpIdeCodeEdit : CodeEdit
 			await _fileChangedService.SharpIdeFileChanged(_currentFile, text, FileChangeType.IdeUnsavedChange);
 			if (pendingCompletionTrigger is not null)
 			{
-				completionTrigger = pendingCompletionTrigger;
+				_completionTrigger = pendingCompletionTrigger;
 				var linePosition = new LinePosition(cursorPosition.line, cursorPosition.col);
-				var shouldTriggerCompletion = await _roslynAnalysis.ShouldTriggerCompletionAsync(_currentFile, text, linePosition, completionTrigger!.Value);
-				GD.Print($"Code completion trigger typed: '{completionTrigger.Value.Character}' at {linePosition.Line}:{linePosition.Character} should trigger: {shouldTriggerCompletion}");
+				var shouldTriggerCompletion = await _roslynAnalysis.ShouldTriggerCompletionAsync(_currentFile, text, linePosition, _completionTrigger!.Value);
+				GD.Print($"Code completion trigger typed: '{_completionTrigger.Value.Character}' at {linePosition.Line}:{linePosition.Character} should trigger: {shouldTriggerCompletion}");
 				if (shouldTriggerCompletion)
 				{
-					await OnCodeCompletionRequested(completionTrigger.Value, text, cursorPosition);
+					await OnCodeCompletionRequested(_completionTrigger.Value, text, cursorPosition);
 				}
 			}
-			else if (pendingCompletionFilterReason is not null)
+			else if (_pendingCompletionFilterReason is not null)
 			{
-				var filterReason = pendingCompletionFilterReason.Value;
-				pendingCompletionFilterReason = null;
+				var filterReason = _pendingCompletionFilterReason.Value;
+				_pendingCompletionFilterReason = null;
 				await CustomFilterCodeCompletionCandidates(filterReason);
 			}
 			__?.Dispose();

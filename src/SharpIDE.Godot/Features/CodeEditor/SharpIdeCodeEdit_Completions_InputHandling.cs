@@ -14,8 +14,8 @@ public partial class SharpIdeCodeEdit
         {
             if (@event.IsActionPressed(InputStringNames.CodeEditorRequestCompletions))
             {
-                completionTrigger = new CompletionTrigger(CompletionTriggerKind.InvokeAndCommitIfUnique);
-                CustomCodeCompletionRequested.InvokeParallelFireAndForget(completionTrigger!.Value, Text, GetCaretPosition());
+                _completionTrigger = new CompletionTrigger(CompletionTriggerKind.InvokeAndCommitIfUnique);
+                CustomCodeCompletionRequested.InvokeParallelFireAndForget(_completionTrigger!.Value, Text, GetCaretPosition());
                 return true;
             }
         }
@@ -67,7 +67,7 @@ public partial class SharpIdeCodeEdit
             }
             else if (@event.IsActionPressed(InputStringNames.Backspace))
             {
-                pendingCompletionFilterReason = CompletionFilterReason.Deletion;
+                _pendingCompletionFilterReason = CompletionFilterReason.Deletion;
                 return false;
             }
 
@@ -104,7 +104,7 @@ public partial class SharpIdeCodeEdit
             var unicodeString = char.ConvertFromUtf32((int)keyEvent.Unicode);
             if (isCodeCompletionPopupOpen && keyEvent.Unicode >= 32)
             {
-                pendingCompletionFilterReason = CompletionFilterReason.Insertion;
+                _pendingCompletionFilterReason = CompletionFilterReason.Insertion;
                 return false; // Let the text update happen
             }
 

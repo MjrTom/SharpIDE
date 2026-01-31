@@ -68,11 +68,11 @@ public partial class SharpIdeCodeEdit
     }
     
 	private EventWrapper<CompletionTrigger, string, (int,int), Task> CustomCodeCompletionRequested { get; } = new((_, _, _) => Task.CompletedTask);
-	private CompletionList? completionList;
-	private Document? completionResultDocument;
-	private CompletionTrigger? completionTrigger;
+	private CompletionList? _completionList;
+	private Document? _completionResultDocument;
+	private CompletionTrigger? _completionTrigger;
 	private CompletionTrigger? _pendingCompletionTrigger;
-	private CompletionFilterReason? pendingCompletionFilterReason;
+	private CompletionFilterReason? _pendingCompletionFilterReason;
 	
 	private readonly List<string> _codeCompletionTriggers =
 	[
@@ -83,9 +83,9 @@ public partial class SharpIdeCodeEdit
     private void ResetCompletionPopupState()
     {
 	    _codeCompletionOptions = ImmutableArray<SharpIdeCompletionItem>.Empty;
-        completionList = null;
-        completionResultDocument = null;
-        completionTrigger = null;
+        _completionList = null;
+        _completionResultDocument = null;
+        _completionTrigger = null;
         _completionTriggerPosition = null;
         _codeCompletionCurrentSelected = 0;
         _codeCompletionForceItemCenter = -1;
@@ -93,10 +93,10 @@ public partial class SharpIdeCodeEdit
 
     private async Task CustomFilterCodeCompletionCandidates(CompletionFilterReason filterReason)
     {
-        if (completionList is null || completionList.ItemsList.Count is 0) return;
+        if (_completionList is null || _completionList.ItemsList.Count is 0) return;
         var cursorPosition = await this.InvokeAsync(() => GetCaretPosition());
         var linePosition = new LinePosition(cursorPosition.line, cursorPosition.col);
-        var filteredCompletions = RoslynAnalysis.FilterCompletions(_currentFile, Text, linePosition, completionList, completionTrigger!.Value, filterReason);
+        var filteredCompletions = RoslynAnalysis.FilterCompletions(_currentFile, Text, linePosition, _completionList, _completionTrigger!.Value, filterReason);
         _codeCompletionOptions = filteredCompletions;
         await this.InvokeAsync(QueueRedraw);
     }
@@ -113,8 +113,8 @@ public partial class SharpIdeCodeEdit
 		// We can't draw until we get this position
 		_completionTriggerPosition = await this.InvokeAsync(() => GetPosAtLineColumn(completionsResult.LinePosition.Line, completionsResult.LinePosition.Character));
 			
-		completionList = completionsResult.CompletionList;
-		completionResultDocument = completionsResult.Document;
+		_completionList = completionsResult.CompletionList;
+		_completionResultDocument = completionsResult.Document;
 		var filterReason = completionTrigger.Kind switch
 		{
 			CompletionTriggerKind.Insertion => CompletionFilterReason.Insertion,
@@ -130,7 +130,7 @@ public partial class SharpIdeCodeEdit
 	{
 		var selectedIndex = _codeCompletionCurrentSelected;
 		var completionItem = _codeCompletionOptions[selectedIndex];
-		var document = completionResultDocument;
+		var document = _completionResultDocument;
 		_ = Task.GodotRun(async () =>
 		{
 			Guard.Against.Null(document);
