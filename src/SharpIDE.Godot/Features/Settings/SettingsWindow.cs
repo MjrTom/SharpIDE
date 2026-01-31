@@ -9,9 +9,9 @@ public partial class SettingsWindow : Window
     private CheckButton _debuggerUseSharpDbgCheckButton = null!;
     private OptionButton _themeOptionButton = null!;
     
-    private Theme _lightTheme = ResourceLoader.Load<Theme>("uid://epmt8kq6efrs");
+    private Theme _lightTheme = ResourceLoader.Load<Theme>("uid://dc7l6bjhn61i5");
     private Color _lightThemeClearColor = new Color("fdfdfd");
-    private Theme _darkTheme = ResourceLoader.Load<Theme>("uid://dc7l6bjhn61i5");
+    private Theme _darkTheme = ResourceLoader.Load<Theme>("uid://epmt8kq6efrs");
     private Color _darkThemeClearColor = new Color("4d4d4d");
     
     public override void _Ready()
