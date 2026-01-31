@@ -1,4 +1,4 @@
-[gd_scene load_steps=9 format=3 uid="uid://d2ewm2lajutpv"]
+[gd_scene format=3 uid="uid://d2ewm2lajutpv"]
 
 [ext_resource type="Script" uid="uid://btsnapfx0dlbb" path="res://Features/Run/RunMenuItem.cs" id="1_syj0f"]
 [ext_resource type="Texture2D" uid="uid://da8cx83rohk50" path="res://Features/LeftSideBar/Resources/Build.svg" id="2_8lles"]
@@ -44,27 +44,27 @@ _data = {
 &"RESET": SubResource("Animation_r58gv")
 }
 
-[node name="RunMenuItem" type="HBoxContainer"]
+[node name="RunMenuItem" type="HBoxContainer" unique_id=1305347884]
 offset_right = 40.0
 offset_bottom = 40.0
 script = ExtResource("1_syj0f")
 
-[node name="Label" type="Label" parent="."]
+[node name="Label" type="Label" parent="." unique_id=1727711838]
 layout_mode = 2
 text = "Project Name"
 
-[node name="Spacer" type="Control" parent="."]
+[node name="Spacer" type="Control" parent="." unique_id=1831433607]
 layout_mode = 2
 size_flags_horizontal = 3
 
-[node name="AnimatedTextureParentControl" type="Control" parent="."]
+[node name="AnimatedTextureParentControl" type="Control" parent="." unique_id=1016714895]
 unique_name_in_owner = true
 visible = false
 custom_minimum_size = Vector2(32, 32)
 layout_mode = 2
 size_flags_vertical = 4
 
-[node name="BuildAnimationTextureRect" type="TextureRect" parent="AnimatedTextureParentControl"]
+[node name="BuildAnimationTextureRect" type="TextureRect" parent="AnimatedTextureParentControl" unique_id=1162156298]
 layout_mode = 0
 offset_left = -3.0
 offset_top = 2.0
@@ -76,24 +76,22 @@ texture = ExtResource("2_8lles")
 expand_mode = 5
 stretch_mode = 5
 
-[node name="RunButton" type="Button" parent="."]
+[node name="RunButton" type="Button" parent="." unique_id=1244540467]
 layout_mode = 2
 size_flags_vertical = 4
 icon = ExtResource("2_hxkig")
 
-[node name="DebugButton" type="Button" parent="."]
+[node name="DebugButton" type="Button" parent="." unique_id=1776881430]
 layout_mode = 2
 size_flags_vertical = 4
 icon = ExtResource("3_cd138")
 
-[node name="StopButton" type="Button" parent="."]
+[node name="StopButton" type="Button" parent="." unique_id=2096899140]
 visible = false
 layout_mode = 2
 size_flags_vertical = 4
 icon = ExtResource("3_hxkig")
 
-[node name="AnimationPlayer" type="AnimationPlayer" parent="."]
+[node name="AnimationPlayer" type="AnimationPlayer" parent="." unique_id=1670390881]
 root_node = NodePath("../AnimatedTextureParentControl")
-libraries = {
-&"": SubResource("AnimationLibrary_r58gv")
-}
+libraries/ = SubResource("AnimationLibrary_r58gv")

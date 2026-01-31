@@ -35,6 +35,8 @@ public partial class SharpIdeCodeEdit : CodeEdit
 	
 	private CustomHighlighter _syntaxHighlighter = new();
 	private PopupMenu _popupMenu = null!;
+	private CanvasItem _aboveCanvasItem = null!;
+	private Rid? _aboveCanvasItemRid = null!;
 
 	private ImmutableArray<SharpIdeDiagnostic> _fileDiagnostics = [];
 	private ImmutableArray<SharpIdeDiagnostic> _fileAnalyzerDiagnostics = [];
@@ -61,8 +63,12 @@ public partial class SharpIdeCodeEdit : CodeEdit
 
 	public override void _Ready()
 	{
+		UpdateEditorThemeForCurrentTheme();
 		SyntaxHighlighter = _syntaxHighlighter;
 		_popupMenu = GetNode<PopupMenu>("CodeFixesMenu");
+		_aboveCanvasItem = GetNode<CanvasItem>("%AboveCanvasItem");
+		_aboveCanvasItemRid = _aboveCanvasItem.GetCanvasItem();
+		RenderingServer.Singleton.CanvasItemSetParent(_aboveCanvasItemRid.Value, GetCanvasItem());
 		_popupMenu.IdPressed += OnCodeFixSelected;
 		CustomCodeCompletionRequested.Subscribe(OnCodeCompletionRequested);
 		CodeFixesRequested += OnCodeFixesRequested;
@@ -74,8 +80,8 @@ public partial class SharpIdeCodeEdit : CodeEdit
 		SymbolValidate += OnSymbolValidate;
 		SymbolLookup += OnSymbolLookup;
 		LinesEditedFrom += OnLinesEditedFrom;
-		MouseEntered += GrabFocus; // fixes symbol hover not appearing when e.g. solution explorer is focused. Same as godot editor
 		GlobalEvents.Instance.SolutionAltered.Subscribe(OnSolutionAltered);
+		GodotGlobalEvents.Instance.TextEditorThemeChanged.Subscribe(UpdateEditorThemeAsync);
 		SetCodeRegionTags("#region", "#endregion");
 		//AddGitGutter();
 	}
@@ -158,6 +164,7 @@ public partial class SharpIdeCodeEdit : CodeEdit
 		_currentFile?.FileDeleted.Unsubscribe(OnFileDeleted);
 		_projectDiagnosticsObserveDisposable?.Dispose();
 		GlobalEvents.Instance.SolutionAltered.Unsubscribe(OnSolutionAltered);
+		GodotGlobalEvents.Instance.TextEditorThemeChanged.Unsubscribe(UpdateEditorThemeAsync);
 		if (_currentFile is not null) _openTabsFileManager.CloseFile(_currentFile);
 	}
 	
@@ -209,28 +216,30 @@ public partial class SharpIdeCodeEdit : CodeEdit
 
 	private void OnTextChanged()
 	{
+		var text = Text;
+		var pendingCompletionTrigger = _pendingCompletionTrigger;
+		_pendingCompletionTrigger = null;
+		var cursorPosition = GetCaretPosition();
 		_ = Task.GodotRun(async () =>
 		{
 			var __ = SharpIdeOtel.Source.StartActivity($"{nameof(SharpIdeCodeEdit)}.{nameof(OnTextChanged)}");
 			_currentFile.IsDirty.Value = true;
-			await _fileChangedService.SharpIdeFileChanged(_currentFile, Text, FileChangeType.IdeUnsavedChange);
+			await _fileChangedService.SharpIdeFileChanged(_currentFile, text, FileChangeType.IdeUnsavedChange);
 			if (pendingCompletionTrigger is not null)
 			{
-				var cursorPosition = GetCaretPosition();
+				_completionTrigger = pendingCompletionTrigger;
 				var linePosition = new LinePosition(cursorPosition.line, cursorPosition.col);
-				completionTrigger = pendingCompletionTrigger;
-				pendingCompletionTrigger = null;
-				var shouldTriggerCompletion = await _roslynAnalysis.ShouldTriggerCompletionAsync(_currentFile, Text, linePosition, completionTrigger!.Value);
-				GD.Print($"Code completion trigger typed: '{completionTrigger.Value.Character}' at {linePosition.Line}:{linePosition.Character} should trigger: {shouldTriggerCompletion}");
+				var shouldTriggerCompletion = await _roslynAnalysis.ShouldTriggerCompletionAsync(_currentFile, text, linePosition, _completionTrigger!.Value);
+				GD.Print($"Code completion trigger typed: '{_completionTrigger.Value.Character}' at {linePosition.Line}:{linePosition.Character} should trigger: {shouldTriggerCompletion}");
 				if (shouldTriggerCompletion)
 				{
-					await OnCodeCompletionRequested(completionTrigger.Value);
+					await OnCodeCompletionRequested(_completionTrigger.Value, text, cursorPosition);
 				}
 			}
-			else if (pendingCompletionFilterReason is not null)
+			else if (_pendingCompletionFilterReason is not null)
 			{
-				var filterReason = pendingCompletionFilterReason.Value;
-				pendingCompletionFilterReason = null;
+				var filterReason = _pendingCompletionFilterReason.Value;
+				_pendingCompletionFilterReason = null;
 				await CustomFilterCodeCompletionCandidates(filterReason);
 			}
 			__?.Dispose();
@@ -277,7 +286,7 @@ public partial class SharpIdeCodeEdit : CodeEdit
 		SetCaretColumn(column);
 		Callable.From(() =>
 		{
-			GrabFocus();
+			GrabFocus(true);
 			AdjustViewportToCaret();
 		}).CallDeferred();
 	}
@@ -363,11 +372,12 @@ public partial class SharpIdeCodeEdit : CodeEdit
 		{
 			endPos.X += 10;
 		}
-		DrawDashedLine(startPos, endPos, color, thickness);
-		//DrawLine(startPos, endPos, color, thickness);
+
+		RenderingServer.Singleton.DrawDashedLine(_aboveCanvasItemRid!.Value, startPos, endPos, color, thickness);
 	}
 	public override void _Draw()
 	{
+		RenderingServer.Singleton.CanvasItemClear(_aboveCanvasItemRid!.Value);
 		//UnderlineRange(_currentLine, _selectionStartCol, _selectionEndCol, new Color(1, 0, 0));
 		foreach (var sharpIdeDiagnostic in _fileDiagnostics.Concat(_fileAnalyzerDiagnostics).ConcatFast(_projectDiagnosticsForFile))
 		{

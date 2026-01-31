@@ -1,9 +1,9 @@
-[gd_scene load_steps=3 format=3 uid="uid://beo6fg8r0ogxc"]
+[gd_scene format=3 uid="uid://beo6fg8r0ogxc"]
 
 [ext_resource type="Script" uid="uid://7j2hyf2tvcdi" path="res://Features/TerminalBase/SharpIdeTerminal.cs" id="1_kpqy5"]
 [ext_resource type="Theme" uid="uid://bswaamju2blyt" path="res://Features/TerminalBase/TerminalTheme.tres" id="2_76y22"]
 
-[node name="SharpIdeTerminal" type="Control"]
+[node name="SharpIdeTerminal" type="Control" unique_id=1215712947]
 layout_mode = 3
 anchors_preset = 15
 anchor_right = 1.0
@@ -14,7 +14,7 @@ size_flags_horizontal = 3
 size_flags_vertical = 3
 script = ExtResource("1_kpqy5")
 
-[node name="Terminal" type="Terminal" parent="."]
+[node name="Terminal" type="Terminal" parent="." unique_id=375933056]
 copy_on_selection = true
 layout_mode = 1
 anchors_preset = 15
