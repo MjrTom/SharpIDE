@@ -153,21 +153,21 @@ public partial class SharpIdeCodeEdit : CodeEdit
 		var caretPosition = this.GetCaretPosition();
 		var caretPositionEnum = LineEditOrigin.Unknown;
 
-		if (caretPosition.line != (int)fromLine || caretPosition.col < 0 || caretPosition.col > fromLineText.Length)
+		if (caretPosition.col > fromLineText.Length)
 		{
 			_syntaxHighlighter.LinesChanged(fromLine, toLine, caretPositionEnum);
 			return;
 		}
 
-		var textFrom0ToCaret = fromLineText[..caretPosition.col];
-		if (string.IsNullOrWhiteSpace(textFrom0ToCaret))
+		var textFrom0ToCaret = fromLineText.AsSpan()[..caretPosition.col];
+		if (textFrom0ToCaret.IsEmpty || textFrom0ToCaret.IsWhiteSpace())
 		{
 			caretPositionEnum = LineEditOrigin.StartOfLine;
 		}
 		else
 		{
-			var textfromCaretToEnd = fromLineText[caretPosition.col..];
-			if (string.IsNullOrWhiteSpace(textfromCaretToEnd))
+			var textfromCaretToEnd = fromLineText.AsSpan()[caretPosition.col..];
+			if (textfromCaretToEnd.IsEmpty || textfromCaretToEnd.IsWhiteSpace())
 			{
 				caretPositionEnum = LineEditOrigin.EndOfLine;
 			}
