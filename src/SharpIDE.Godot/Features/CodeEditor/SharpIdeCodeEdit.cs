@@ -423,7 +423,7 @@ public partial class SharpIdeCodeEdit : CodeEdit
 	public override void _GuiInput(InputEvent @event)
 	{
 		if (@event is InputEventMouseMotion) return;
-		if (@event.IsActionPressed(InputStringNames.Backspace, true))
+		if (@event.IsActionPressed(InputStringNames.Backspace, true) && HasSelection() is false)
 		{
 			var (caretLine, caretCol) = GetCaretPosition();
 			if (caretLine > 0 && caretCol > 0)
