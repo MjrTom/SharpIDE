@@ -67,7 +67,7 @@ namespace SharpIDE.Application.Features.Analysis.WorkspaceServices
 			Stream targetStream,
 			bool noLogo = false,
 			BlobContentId? pdbId = null,
-			IProgress<DecompilationProgress> progress = null,
+			IProgress<DecompilationProgress>? progress = null,
 			string currentProgressTitle = "Generating portable PDB...",
 			int maxDegreeOfParallelism = -1,
 			CancellationToken cancellationToken = default)
@@ -75,7 +75,7 @@ namespace SharpIDE.Application.Features.Analysis.WorkspaceServices
 			using var _ = SharpIdeOtel.Source.StartActivity($"{nameof(PortablePdbWriter2)}.{nameof(DecompiledAndWritePdb)}");
 			MetadataBuilder metadata = new MetadataBuilder();
 			MetadataReader reader = file.Metadata;
-			var entrypointHandle = MetadataTokens.MethodDefinitionHandle(file.Reader.PEHeaders.CorHeader.EntryPointTokenOrRelativeVirtualAddress);
+			var entrypointHandle = MetadataTokens.MethodDefinitionHandle(file.Reader.PEHeaders.CorHeader!.EntryPointTokenOrRelativeVirtualAddress);
 
 			var sequencePointBlobs = new Dictionary<MethodDefinitionHandle, (DocumentHandle Document, BlobHandle SequencePoints)>();
 			var localScopes = new List<(MethodDefinitionHandle Method, ImportScopeInfo Import, int Offset, int Length, HashSet<ILVariable> Locals)>();
@@ -180,7 +180,7 @@ namespace SharpIDE.Application.Features.Analysis.WorkspaceServices
 				foreach (var local in localScope.Locals.OrderBy(l => l.Index))
 				{
 					var localVarName = local.Name != null ? metadata.GetOrAddString(local.Name) : default;
-					metadata.AddLocalVariable(LocalVariableAttributes.None, local.Index.Value, localVarName);
+					metadata.AddLocalVariable(LocalVariableAttributes.None, local.Index!.Value, localVarName);
 				}
 
 				metadata.AddLocalScope(localScope.Method, localScope.Import.Handle, firstLocalVariable,
@@ -244,14 +244,14 @@ namespace SharpIDE.Application.Features.Analysis.WorkspaceServices
 					foreach (var function in result.DebugInfoGen.Functions)
 					{
 						var method = function.MoveNextMethod ?? function.Method;
-						var methodHandle = (MethodDefinitionHandle)method.MetadataToken;
+						var methodHandle = (MethodDefinitionHandle)method!.MetadataToken;
 						result.SequencePoints.TryGetValue(function, out var points);
 						ProcessMethod(methodHandle, document, points, result.SyntaxTree);
 						if (function.MoveNextMethod != null)
 						{
 							stateMachineMethods.Add((
 								(MethodDefinitionHandle)function.MoveNextMethod.MetadataToken,
-								(MethodDefinitionHandle)function.Method.MetadataToken
+								(MethodDefinitionHandle)function.Method!.MetadataToken
 							));
 							customDebugInfo.Add((
 								function.MoveNextMethod.MetadataToken,
@@ -270,11 +270,11 @@ namespace SharpIDE.Application.Features.Analysis.WorkspaceServices
 			}
 
 			void ProcessMethod(MethodDefinitionHandle method, DocumentHandle document,
-				List<SequencePoint> sequencePoints, SyntaxTree syntaxTree)
+				List<SequencePoint>? sequencePoints, SyntaxTree syntaxTree)
 			{
 				var methodDef = reader.GetMethodDefinition(method);
 				int localSignatureRowId;
-				MethodBodyBlock methodBody;
+				MethodBodyBlock? methodBody;
 				if (methodDef.RelativeVirtualAddress != 0)
 				{
 					methodBody = file.Reader.GetMethodBody(methodDef.RelativeVirtualAddress);
@@ -306,7 +306,7 @@ namespace SharpIDE.Application.Features.Analysis.WorkspaceServices
 		static BlobBuilder BuildStateMachineHoistedLocalScopes(ILFunction function)
 		{
 			var builder = new BlobBuilder();
-			foreach (var variable in function.Variables.Where(v => v.StateMachineField != null).OrderBy(v => MetadataTokens.GetRowNumber(v.StateMachineField.MetadataToken)))
+			foreach (var variable in function.Variables.Where(v => v.StateMachineField != null).OrderBy(v => MetadataTokens.GetRowNumber(v.StateMachineField!.MetadataToken)))
 			{
 				builder.WriteUInt32(0);
 				builder.WriteUInt32((uint)function.CodeSize);

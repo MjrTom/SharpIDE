@@ -23,9 +23,9 @@ namespace SharpIDE.Application.Features.Analysis.WorkspaceServices
 
 		public DecompilerSettings Settings { get; }
 		public IAssemblyResolver AssemblyResolver { get; }
-		public IDebugInfoProvider DebugInfoProvider { get; }
+		public IDebugInfoProvider? DebugInfoProvider { get; }
 		public int MaxDegreeOfParallelism { get; set; } = Environment.ProcessorCount;
-		public IProgress<DecompilationProgress> ProgressIndicator { get; set; }
+		public IProgress<DecompilationProgress>? ProgressIndicator { get; set; }
 
 		public WholeAssemblyDecompiler(IAssemblyResolver assemblyResolver)
 			: this(new DecompilerSettings(), assemblyResolver, debugInfoProvider: null)
@@ -35,7 +35,7 @@ namespace SharpIDE.Application.Features.Analysis.WorkspaceServices
 		public WholeAssemblyDecompiler(
 			DecompilerSettings settings,
 			IAssemblyResolver assemblyResolver,
-			IDebugInfoProvider debugInfoProvider)
+			IDebugInfoProvider? debugInfoProvider)
 		{
 			Settings = settings ?? throw new ArgumentNullException(nameof(settings));
 			AssemblyResolver = assemblyResolver ?? throw new ArgumentNullException(nameof(assemblyResolver));
@@ -197,7 +197,7 @@ namespace SharpIDE.Application.Features.Analysis.WorkspaceServices
 
 		static string CleanUpName(string text, bool separateAtDots, bool treatAsFileName, bool treatAsPath)
 		{
-			string extension = null;
+			string? extension = null;
 			int currentSegmentLength = 0;
 			if (treatAsFileName)
 			{
