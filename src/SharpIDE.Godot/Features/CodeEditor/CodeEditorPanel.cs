@@ -56,7 +56,7 @@ public partial class CodeEditorPanel : MarginContainer
 		var editors = _tabContainer.GetChildren().OfType<SharpIdeCodeEditContainer>().ToList();
 		if (editors.Count is 0) return;
 
-		var currentFontSize = editors.First().GetThemeFontSize(ThemeStringNames.FontSize);
+		var currentFontSize = editors.First().CodeEdit.GetThemeFontSize(ThemeStringNames.FontSize);
 		var newFontSize = increase
 			? Mathf.Clamp(currentFontSize + 2, minFontSize, maxFontSize)
 			: Mathf.Clamp(currentFontSize - 2, minFontSize, maxFontSize);
