@@ -199,42 +199,42 @@ public partial class SolutionExplorerPanel : MarginContainer
 	private TreeItem CreateSlnFolderTreeItem(Tree tree, TreeItem parent, SharpIdeSolutionFolder slnFolder)
 	{
 	    var folderItem = tree.CreateItem(parent);
-	        folderItem.SetText(0, slnFolder.Name);
-	        folderItem.SetIcon(0, SlnFolderIcon);
-	        folderItem.SetMetadata(0, new RefCountedContainer<SharpIdeSolutionFolder>(slnFolder));
+        folderItem.SetText(0, slnFolder.Name);
+        folderItem.SetIcon(0, SlnFolderIcon);
+        folderItem.SetMetadata(0, new RefCountedContainer<SharpIdeSolutionFolder>(slnFolder));
 
-	        // Observe folder sub-collections
-	        var subFoldersView = slnFolder.Folders.CreateView(y => new TreeItemContainer());
-	        subFoldersView.Unfiltered.ToList().ForEach(s => s.View.Value = CreateSlnFolderTreeItem(_tree, folderItem, s.Value));
-	        
-	        subFoldersView.ObserveChanged().SubscribeOnThreadPool().ObserveOnThreadPool()
-	            .SubscribeAwait(async (innerEvent, ct) => await (innerEvent.Action switch
-	            {
-	                NotifyCollectionChangedAction.Add => this.InvokeAsync(() => innerEvent.NewItem.View.Value = CreateSlnFolderTreeItem(_tree, folderItem, innerEvent.NewItem.Value)),
-	                NotifyCollectionChangedAction.Remove => FreeTreeItem(innerEvent.OldItem.View.Value),
-	                _ => Task.CompletedTask
-	            })).AddToDeferred(this);
+        // Observe folder sub-collections
+        var subFoldersView = slnFolder.Folders.CreateView(y => new TreeItemContainer());
+        subFoldersView.Unfiltered.ToList().ForEach(s => s.View.Value = CreateSlnFolderTreeItem(_tree, folderItem, s.Value));
+        
+        subFoldersView.ObserveChanged().SubscribeOnThreadPool().ObserveOnThreadPool()
+            .SubscribeAwait(async (innerEvent, ct) => await (innerEvent.Action switch
+            {
+                NotifyCollectionChangedAction.Add => this.InvokeAsync(() => innerEvent.NewItem.View.Value = CreateSlnFolderTreeItem(_tree, folderItem, innerEvent.NewItem.Value)),
+                NotifyCollectionChangedAction.Remove => FreeTreeItem(innerEvent.OldItem.View.Value),
+                _ => Task.CompletedTask
+            })).AddToDeferred(this);
 
-	        var projectsView = slnFolder.Projects.CreateView(y => new TreeItemContainer());
-	        projectsView.Unfiltered.ToList().ForEach(s => s.View.Value = CreateProjectTreeItem(_tree, folderItem, s.Value));
-	        projectsView.ObserveChanged().SubscribeOnThreadPool().ObserveOnThreadPool()
-	            .SubscribeAwait(async (innerEvent, ct) => await (innerEvent.Action switch
-	            {
-	                NotifyCollectionChangedAction.Add => this.InvokeAsync(() => innerEvent.NewItem.View.Value = CreateProjectTreeItem(_tree, folderItem, innerEvent.NewItem.Value)),
-	                NotifyCollectionChangedAction.Remove => FreeTreeItem(innerEvent.OldItem.View.Value),
-	                _ => Task.CompletedTask
-	            })).AddToDeferred(this);
+        var projectsView = slnFolder.Projects.CreateView(y => new TreeItemContainer());
+        projectsView.Unfiltered.ToList().ForEach(s => s.View.Value = CreateProjectTreeItem(_tree, folderItem, s.Value));
+        projectsView.ObserveChanged().SubscribeOnThreadPool().ObserveOnThreadPool()
+            .SubscribeAwait(async (innerEvent, ct) => await (innerEvent.Action switch
+            {
+                NotifyCollectionChangedAction.Add => this.InvokeAsync(() => innerEvent.NewItem.View.Value = CreateProjectTreeItem(_tree, folderItem, innerEvent.NewItem.Value)),
+                NotifyCollectionChangedAction.Remove => FreeTreeItem(innerEvent.OldItem.View.Value),
+                _ => Task.CompletedTask
+            })).AddToDeferred(this);
 
-	        var filesView = slnFolder.Files.CreateView(y => new TreeItemContainer());
-	        filesView.Unfiltered.ToList().ForEach(s => s.View.Value = CreateFileTreeItem(_tree, folderItem, s.Value));
-	        filesView.ObserveChanged().SubscribeOnThreadPool().ObserveOnThreadPool()
-	            .SubscribeAwait(async (innerEvent, ct) => await (innerEvent.Action switch
-	            {
-	                NotifyCollectionChangedAction.Add => this.InvokeAsync(() => innerEvent.NewItem.View.Value = CreateFileTreeItem(_tree, folderItem, innerEvent.NewItem.Value, innerEvent.NewStartingIndex)),
-	                NotifyCollectionChangedAction.Remove => FreeTreeItem(innerEvent.OldItem.View.Value),
-	                _ => Task.CompletedTask
-	            })).AddToDeferred(this);
-	        return folderItem;
+        var filesView = slnFolder.Files.CreateView(y => new TreeItemContainer());
+        filesView.Unfiltered.ToList().ForEach(s => s.View.Value = CreateFileTreeItem(_tree, folderItem, s.Value));
+        filesView.ObserveChanged().SubscribeOnThreadPool().ObserveOnThreadPool()
+            .SubscribeAwait(async (innerEvent, ct) => await (innerEvent.Action switch
+            {
+                NotifyCollectionChangedAction.Add => this.InvokeAsync(() => innerEvent.NewItem.View.Value = CreateFileTreeItem(_tree, folderItem, innerEvent.NewItem.Value, innerEvent.NewStartingIndex)),
+                NotifyCollectionChangedAction.Remove => FreeTreeItem(innerEvent.OldItem.View.Value),
+                _ => Task.CompletedTask
+            })).AddToDeferred(this);
+        return folderItem;
 	}
 
 	[RequiresGodotUiThread]
