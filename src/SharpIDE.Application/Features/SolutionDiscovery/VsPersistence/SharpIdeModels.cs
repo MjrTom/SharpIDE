@@ -137,7 +137,7 @@ public class SharpIdeProjectModel : ISharpIdeNode, IExpandableSharpIdeNode, IChi
 			if (result.LoadState is Evaluation.MsBuildProjectLoadState.Invalid)
 			{
 				Guard.Against.Null(result.Diagnostic);
-				Diagnostics.Add(result.Diagnostic.Value);
+				Diagnostics.Add(result.Diagnostic);
 			}
 			return result.Project!;
 		});

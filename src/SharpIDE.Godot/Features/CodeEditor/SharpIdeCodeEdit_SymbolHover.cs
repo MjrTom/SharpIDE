@@ -32,7 +32,7 @@ public partial class SharpIdeCodeEdit
 
         
         var diagnostics = _fileDiagnostics.AsEnumerable().Concat(_fileAnalyzerDiagnostics).Concat(_projectDiagnosticsForFile);
-        var diagnosticsForLinePosition = diagnostics.FirstOrNull(s => s.Span.Start.Line == linePosition.Line &&
+        var diagnosticsForLinePosition = diagnostics.FirstOrDefault(s => s.Span.Start.Line == linePosition.Line &&
                                                                       s.Span.Start.Character <= linePosition.Character &&
                                                                       s.Span.End.Character >= linePosition.Character);
         
@@ -132,7 +132,7 @@ public partial class SharpIdeCodeEdit
         panel.AddThemeStyleboxOverride(ThemeStringNames.Panel, styleBox);
         
         var diagnosticNode = diagnosticsForLinePosition is not null
-            ? SymbolInfoComponents.GetDiagnostic(diagnosticsForLinePosition.Value)
+            ? SymbolInfoComponents.GetDiagnostic(diagnosticsForLinePosition)
             : null;
         diagnosticNode?.FitContent = true;
         diagnosticNode?.AutowrapMode = TextServer.AutowrapMode.Off;
