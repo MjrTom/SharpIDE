@@ -70,7 +70,10 @@ public class VsPersistenceSolutionService
 			vsSolutionFolder = _vsSolution.FindFolder(solutionFolder.VsPersistencePath);
 		}
 
-		_vsSolution.AddProject(projectFilePath, null, vsSolutionFolder);
+		// the project file path needs to be relative from the sln file directory
+		var projectFileRelativePath = Path.GetRelativePath(Path.GetDirectoryName(_solutionFilePath)!, projectFilePath).Replace('\\', '/');
+
+		_vsSolution.AddProject(projectFileRelativePath, null, vsSolutionFolder);
 		await _solutionSerializer.SaveAsync(_solutionFilePath, _vsSolution, cancellationToken);
 	}
 }
