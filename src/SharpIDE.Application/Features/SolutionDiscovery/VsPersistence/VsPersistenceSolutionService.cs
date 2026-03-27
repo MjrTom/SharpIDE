@@ -5,7 +5,7 @@ using Microsoft.VisualStudio.SolutionPersistence.Serializer;
 
 namespace SharpIDE.Application.Features.SolutionDiscovery.VsPersistence;
 
-public static class VsPersistenceMapper
+public static class VsPersistenceSolutionService
 {
 	public static async Task<SharpIdeSolutionModel> GetSolutionModel(string solutionFilePath, CancellationToken cancellationToken = default)
 	{

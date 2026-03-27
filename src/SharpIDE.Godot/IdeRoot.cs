@@ -152,7 +152,7 @@ public partial class IdeRoot : Control
 		{
 			GD.Print($"Selected: {path}");
 			var timer = Stopwatch.StartNew();
-			var solutionModel = await VsPersistenceMapper.GetSolutionModel(path); // TODO: Probably refactor into a DI Service
+			var solutionModel = await VsPersistenceSolutionService.GetSolutionModel(path); // TODO: Probably refactor into a DI Service
 			timer.Stop();
 			await _nodeReadyTcs.Task;
 			// Do not use injected services until after _nodeReadyTcs - Services aren't injected until _Ready

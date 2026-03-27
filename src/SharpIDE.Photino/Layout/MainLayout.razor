@@ -183,7 +183,7 @@
 		var solutionFilePath = (string)result.Data!;
 		_solutionFilePath = solutionFilePath;
 
-		var solutionModel = await VsPersistenceMapper.GetSolutionModel(_solutionFilePath);
+		var solutionModel = await VsPersistenceSolutionService.GetSolutionModel(_solutionFilePath);
 		_solutionModel = solutionModel;
 		RoslynAnalysis.StartLoadingSolutionInWorkspace(solutionModel);
 	}
