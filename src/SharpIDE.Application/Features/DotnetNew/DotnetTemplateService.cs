@@ -10,11 +10,12 @@ namespace SharpIDE.Application.Features.DotnetNew;
 public class DotnetTemplateService(ILoggerFactory loggerFactory)
 {
 	private readonly ILoggerFactory _loggerFactory = loggerFactory;
+	public static HashSet<string> MicrosoftTemplateCategories { get; } = new HashSet<string>(["Console", "Library", "Web", "WinForms", "WPF", "Test", "Aspire"], StringComparer.OrdinalIgnoreCase);
 
 	public async Task<Dictionary<string, Dictionary<string, List<ITemplateInfo>>>> GetCategorisedTemplates(CancellationToken cancellationToken = default)
 	{
 		var templates = await GetTemplates(cancellationToken);
-		var categories = new HashSet<string>(["Web", "WinForms", "WPF", "Console", "Library", "Test", "Aspire"], StringComparer.OrdinalIgnoreCase);
+		var categories = MicrosoftTemplateCategories;
 
 		var categorizedTemplates = templates
 			.Where(t =>

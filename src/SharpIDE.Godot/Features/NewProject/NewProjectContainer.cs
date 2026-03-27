@@ -1,4 +1,5 @@
 using Godot;
+using Microsoft.TemplateEngine.Abstractions;
 using SharpIDE.Application.Features.DotnetNew;
 
 namespace SharpIDE.Godot.Features.NewProject;
@@ -6,15 +7,49 @@ namespace SharpIDE.Godot.Features.NewProject;
 public partial class NewProjectContainer : VBoxContainer
 {
     [Inject] private readonly DotnetTemplateService _dotnetTemplateService = null!;
+    
+    private ButtonGroup _categoryButtonGroup = new ButtonGroup();
+
+    private VBoxContainer _microsoftTemplatesVBoxContainer = null!;
+    private VBoxContainer _customTemplatesVBoxContainer = null!;
+    private TemplateComponent _templateComponent = null!;
+    
+    private Dictionary<string, Dictionary<string, List<ITemplateInfo>>> _categorisedTemplates = null!;
 
     public override void _Ready()
     {
+        _microsoftTemplatesVBoxContainer = GetNode<VBoxContainer>("%MicrosoftTemplatesVBoxContainer");
+        _customTemplatesVBoxContainer = GetNode<VBoxContainer>("%CustomTemplatesVBoxContainer");
+        _templateComponent = GetNode<TemplateComponent>("%TemplateComponent");
+        _categoryButtonGroup.Pressed += baseButton =>
+        {
+            var button = (Button)baseButton;
+            var templatesForCategory = _categorisedTemplates[button.Text];
+            _templateComponent.SetTemplates(templatesForCategory);
+        };
         _ = Task.GodotRun(AsyncReady);
     }
 
     private async Task AsyncReady()
     {
-        var categorisedTemplates = await _dotnetTemplateService.GetCategorisedTemplates();
-        
+        _categorisedTemplates = await _dotnetTemplateService.GetCategorisedTemplates();
+        await this.InvokeAsync(() =>
+        {
+            foreach (var (categoryName, templatesByGroupIdentity) in _categorisedTemplates)
+            {
+                if (templatesByGroupIdentity.Count is 0) continue;
+                if (DotnetTemplateService.MicrosoftTemplateCategories.Contains(categoryName))
+                {
+                    var categoryButton = new Button
+                    {
+                        Text = categoryName,
+                        ToggleMode = true,
+                        ButtonGroup = _categoryButtonGroup
+                    };
+                    _microsoftTemplatesVBoxContainer.AddChild(categoryButton);
+                }
+            
+            }
+        });
     }
 }
