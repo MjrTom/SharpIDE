@@ -1,5 +1,6 @@
 using Godot;
 using Microsoft.TemplateEngine.Abstractions;
+using SharpIDE.Application.Features.DotnetNew;
 
 namespace SharpIDE.Godot.Features.NewProject;
 
@@ -21,6 +22,8 @@ public partial class TemplateComponent : VBoxContainer
 
     private Dictionary<string, List<ITemplateInfo>> _templatesForCurrentCategory = null!;
     private ITemplateInfo _selectedTemplate = null!;
+    
+    [Inject] DotnetTemplateService _dotnetTemplateService = null!;
 
     public override void _Ready()
     {
@@ -39,6 +42,16 @@ public partial class TemplateComponent : VBoxContainer
         _cancelButton = GetNode<Button>("%CancelButton");
         _cancelButton.Pressed += () =>
         {
+            GetWindow().QueueFree();
+        };
+        _createTemplateButton.Pressed += () =>
+        {
+            var projectName = _projectDirectoryLineEdit.Text;
+            var text = _projectNameLineEdit.Text;
+            _ = Task.GodotRun(async () =>
+            {
+                await _dotnetTemplateService.ExecuteTemplate(_selectedTemplate, projectName, text, []);
+            });
             GetWindow().QueueFree();
         };
     }

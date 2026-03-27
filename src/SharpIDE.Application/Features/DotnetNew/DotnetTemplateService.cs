@@ -11,6 +11,8 @@ public class DotnetTemplateService(ILoggerFactory loggerFactory)
 {
 	private readonly ILoggerFactory _loggerFactory = loggerFactory;
 	public static HashSet<string> MicrosoftTemplateCategories { get; } = new HashSet<string>(["Console", "Library", "Web", "WinForms", "WPF", "Test", "Aspire"], StringComparer.OrdinalIgnoreCase);
+	private CliTemplateEngineHost? _templateEngineHost;
+	private Bootstrapper? _bootstrapper;
 
 	public async Task<Dictionary<string, Dictionary<string, List<ITemplateInfo>>>> GetCategorisedTemplates(CancellationToken cancellationToken = default)
 	{
@@ -44,8 +46,8 @@ public class DotnetTemplateService(ILoggerFactory loggerFactory)
 
 	public async Task<IReadOnlyList<ITemplateInfo>> GetTemplates(CancellationToken cancellationToken = default)
 	{
-		var templateEngineHost = CliTemplateEngineHost.CreateHost(false, false, null, null, false, LogLevel.Information, _loggerFactory);
-		var bootstrapper = new Bootstrapper(templateEngineHost, false);
+		var templateEngineHost = _templateEngineHost ?? CliTemplateEngineHost.CreateHost(false, false, null, null, false, LogLevel.Information, _loggerFactory);
+		var bootstrapper = _bootstrapper ?? new Bootstrapper(templateEngineHost, false);
 		var templates = await bootstrapper.GetTemplatesAsync(cancellationToken);
 
 		return templates;
@@ -62,5 +64,10 @@ public class DotnetTemplateService(ILoggerFactory loggerFactory)
 		// var name = Path.GetFileName(path);
 		// var templateCreator = await bootstrapper.CreateAsync(template, name, path, (Dictionary<string, string?>)[], null, cancellationToken);
 		;
+	}
+
+	public async Task ExecuteTemplate(ITemplateInfo template, string projectName, string path, Dictionary<string, string?> parameters, CancellationToken cancellationToken = default)
+	{
+		var templateCreator = await _bootstrapper!.CreateAsync(template, projectName, path, parameters, null, cancellationToken);
 	}
 }
