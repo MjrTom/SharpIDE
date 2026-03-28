@@ -28,15 +28,4 @@ public interface IFileOrFolder : IChildSharpIdeNode
 public interface IChildSharpIdeNode
 {
 	public IExpandableSharpIdeNode Parent { get; set; }
-
-	// TODO: Profile/redesign
-	public SharpIdeProjectModel? GetNearestProjectNode()
-	{
-		var current = this;
-		while (current is not SharpIdeProjectModel && current?.Parent is not null)
-		{
-			current = current.Parent as IChildSharpIdeNode;
-		}
-		return current as SharpIdeProjectModel;
-	}
 }

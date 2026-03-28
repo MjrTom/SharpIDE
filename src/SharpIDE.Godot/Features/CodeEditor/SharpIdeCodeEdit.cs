@@ -329,7 +329,7 @@ public partial class SharpIdeCodeEdit : CodeEdit
 		var readFileTask = _openTabsFileManager.GetFileTextAsync(file);
 		_currentFile.FileContentsChangedExternally.Subscribe(OnFileChangedExternally);
 		_currentFile.FileDeleted.Subscribe(OnFileDeleted);
-		var project = ((IChildSharpIdeNode)_currentFile).GetNearestProjectNode();
+		var project = Solution!.GetProjectForContainingFolderPath(_currentFile.GetContainingProjectFolder()!);
 		if (project is not null)
 		{
 			_projectDiagnosticsObserveDisposable = project.Diagnostics.ObserveChanged().SubscribeOnThreadPool().ObserveOnThreadPool()

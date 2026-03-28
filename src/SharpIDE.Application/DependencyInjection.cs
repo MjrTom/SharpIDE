@@ -6,6 +6,7 @@ using SharpIDE.Application.Features.DotnetNew;
 using SharpIDE.Application.Features.Editor;
 using SharpIDE.Application.Features.Evaluation;
 using SharpIDE.Application.Features.FilePersistence;
+using SharpIDE.Application.Features.FileSystem;
 using SharpIDE.Application.Features.FileWatching;
 using SharpIDE.Application.Features.NavigationHistory;
 using SharpIDE.Application.Features.Nuget;
@@ -44,6 +45,7 @@ public static class DependencyInjection
 		services.AddScoped<SharpIdeMetadataAsSourceService>();
 		services.AddScoped<DotnetTemplateService>();
 		services.AddScoped<VsPersistenceSolutionService>();
+		services.AddScoped<FileSystemService>();
 		services.AddLogging();
 		return services;
 	}

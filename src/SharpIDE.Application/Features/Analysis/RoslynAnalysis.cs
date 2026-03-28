@@ -37,6 +37,7 @@ using SharpIDE.Application.Features.Analysis.ProjectLoader;
 using SharpIDE.Application.Features.Analysis.Razor;
 using SharpIDE.Application.Features.Analysis.WorkspaceServices;
 using SharpIDE.Application.Features.Build;
+using SharpIDE.Application.Features.FileSystem;
 using SharpIDE.Application.Features.FileWatching;
 using SharpIDE.Application.Features.SolutionDiscovery;
 using SharpIDE.Application.Features.SolutionDiscovery.VsPersistence;
@@ -75,14 +76,15 @@ public partial class RoslynAnalysis(ILogger<RoslynAnalysis> logger, BuildService
 
 	public TaskCompletionSource _solutionLoadedTcs = null!;
 	private SharpIdeSolutionModel? _sharpIdeSolutionModel;
-	public void StartLoadingSolutionInWorkspace(SharpIdeSolutionModel solutionModel)
+	private SharpIdeRootFolder? _sharpIdeRootFolder;
+	public void StartLoadingSolutionInWorkspace(SharpIdeSolutionModel solutionModel, SharpIdeRootFolder sharpIdeRootFolder)
 	{
 		_solutionLoadedTcs = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
 		_ = Task.Run(async () =>
 		{
 			try
 			{
-				await LoadSolutionInWorkspace(solutionModel);
+				await LoadSolutionInWorkspace(solutionModel, sharpIdeRootFolder);
 				await UpdateSolutionDiagnostics();
 			}
 			catch (Exception e)
@@ -91,7 +93,7 @@ public partial class RoslynAnalysis(ILogger<RoslynAnalysis> logger, BuildService
 			}
 		});
 	}
-	public async Task LoadSolutionInWorkspace(SharpIdeSolutionModel solutionModel, CancellationToken cancellationToken = default)
+	public async Task LoadSolutionInWorkspace(SharpIdeSolutionModel solutionModel, SharpIdeRootFolder sharpIdeRootFolder, CancellationToken cancellationToken = default)
 	{
 		using var _ = SharpIdeOtel.Source.StartActivity($"{nameof(RoslynAnalysis)}.{nameof(LoadSolutionInWorkspace)}");
 		_logger.LogInformation("RoslynAnalysis: Loading solution {SolutionPath}", solutionModel.FilePath);
@@ -360,7 +362,7 @@ public partial class RoslynAnalysis(ILogger<RoslynAnalysis> logger, BuildService
 
 	public async Task UpdateProjectDiagnosticsForFile(SharpIdeFile sharpIdeFile, CancellationToken cancellationToken = default)
 	{
-		var project = ((IChildSharpIdeNode) sharpIdeFile).GetNearestProjectNode();
+		var project = GetSharpIdeProjectForSharpIdeFile(sharpIdeFile);
 		Guard.Against.Null(project);
 		await UpdateProjectDiagnostics(project, cancellationToken);
 	}
@@ -376,29 +378,6 @@ public partial class RoslynAnalysis(ILogger<RoslynAnalysis> logger, BuildService
 		var allDiagnostics = compilation.GetDiagnostics(cancellationToken);
 		var diagnostics = allDiagnostics
 			.Where(d => d.Severity is not DiagnosticSeverity.Hidden)
-			.Select(d =>
-			{
-				var mappedFileLinePositionSpan = d.Location.SourceTree!.GetMappedLineSpan(d.Location.SourceSpan);
-				return new SharpIdeDiagnostic(mappedFileLinePositionSpan.Span, d, mappedFileLinePositionSpan.Path);
-			})
-			.ToImmutableArray();
-		return diagnostics;
-	}
-
-	public async Task<ImmutableArray<SharpIdeDiagnostic>> GetProjectDiagnosticsForFile(SharpIdeFile sharpIdeFile, CancellationToken cancellationToken = default)
-	{
-		using var _ = SharpIdeOtel.Source.StartActivity($"{nameof(RoslynAnalysis)}.{nameof(GetProjectDiagnosticsForFile)}");
-		await _solutionLoadedTcs.Task;
-		if (sharpIdeFile.IsRoslynWorkspaceFile is false) return [];
-		var project = GetProjectForSharpIdeFile(sharpIdeFile);
-		var compilation = await project.GetCompilationAsync(cancellationToken);
-		Guard.Against.Null(compilation, nameof(compilation));
-
-		var document = await GetDocumentForSharpIdeFile(sharpIdeFile, cancellationToken);
-
-		var syntaxTree = compilation.SyntaxTrees.Single(s => s.FilePath == document.FilePath);
-		var diagnostics = compilation.GetDiagnostics(cancellationToken)
-			.Where(d => d.Severity is not DiagnosticSeverity.Hidden && d.Location.SourceTree == syntaxTree)
 			.Select(d =>
 			{
 				var mappedFileLinePositionSpan = d.Location.SourceTree!.GetMappedLineSpan(d.Location.SourceSpan);
@@ -466,7 +445,7 @@ public partial class RoslynAnalysis(ILogger<RoslynAnalysis> logger, BuildService
 		return result;
 	}
 
-	private static async Task<Document> GetDocumentForSharpIdeFile(SharpIdeFile fileModel, CancellationToken cancellationToken = default)
+	private async Task<Document> GetDocumentForSharpIdeFile(SharpIdeFile fileModel, CancellationToken cancellationToken = default)
 	{
 		var project = GetProjectForSharpIdeFile(fileModel);
 		var document = fileModel.IsCsharpFile ? project.Documents.SingleOrDefault(s => s.FilePath == fileModel.Path)
@@ -1398,13 +1377,16 @@ public partial class RoslynAnalysis(ILogger<RoslynAnalysis> logger, BuildService
 		return outputPath;
 	}
 
-	private static SharpIdeProjectModel GetSharpIdeProjectForSharpIdeFile(SharpIdeFile sharpIdeFile)
+	private SharpIdeProjectModel GetSharpIdeProjectForSharpIdeFile(SharpIdeFile sharpIdeFile)
 	{
-		var sharpIdeProjectModel = ((IChildSharpIdeNode)sharpIdeFile).GetNearestProjectNode()!;
-		return sharpIdeProjectModel;
+		var containingProjectFolder = sharpIdeFile.GetContainingProjectFolder();
+		Guard.Against.Null(containingProjectFolder);
+		var sharpIdeProject = _sharpIdeSolutionModel!.GetProjectForContainingFolderPath(containingProjectFolder);
+		Guard.Against.Null(sharpIdeProject);
+		return sharpIdeProject;
 	}
 
-	private static Project GetProjectForSharpIdeFile(SharpIdeFile sharpIdeFile)
+	private Project GetProjectForSharpIdeFile(SharpIdeFile sharpIdeFile)
 	{
 		if (sharpIdeFile.IsMetadataAsSourceFile)
 		{

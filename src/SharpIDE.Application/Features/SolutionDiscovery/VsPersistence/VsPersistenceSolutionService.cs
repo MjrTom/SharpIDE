@@ -3,6 +3,7 @@ using LibGit2Sharp;
 using Microsoft.VisualStudio.SolutionPersistence;
 using Microsoft.VisualStudio.SolutionPersistence.Model;
 using Microsoft.VisualStudio.SolutionPersistence.Serializer;
+using SharpIDE.Application.Features.FileSystem;
 
 namespace SharpIDE.Application.Features.SolutionDiscovery.VsPersistence;
 
@@ -19,7 +20,7 @@ public class VsPersistenceSolutionService
 		_solutionFilePath = solutionFilePath;
 	}
 	// Weird separation between ReadSolution and LoadSolution is so we can call the static ReadSolution in IdeRoot before all the UI Nodes are ready and DI services injected
-	public static async Task<(SharpIdeSolutionModel, SolutionModel, ISolutionSerializer)> ReadSolution(string solutionFilePath, CancellationToken cancellationToken = default)
+	public static async Task<(SharpIdeSolutionModel, SolutionModel, ISolutionSerializer)> ReadSolution(string solutionFilePath, SharpIdeRootFolder sharpIdeRootFolder, CancellationToken cancellationToken = default)
 	{
 		using var _ = SharpIdeOtel.Source.StartActivity();
 
@@ -35,7 +36,7 @@ public class VsPersistenceSolutionService
 		// This intermediate model is pretty much useless, but I have left it around as we grab the project nodes with it, which we might use later.
 		var intermediateModel = await IntermediateMapper.GetIntermediateModel(solutionFilePath, vsSolution, cancellationToken);
 
-		var solutionModel = new SharpIdeSolutionModel(solutionFilePath, intermediateModel);
+		var solutionModel = new SharpIdeSolutionModel(solutionFilePath, intermediateModel, sharpIdeRootFolder);
 
 		var gitFolderPath = Repository.Discover(solutionFilePath);
 		if (gitFolderPath is null) return (solutionModel, vsSolution, solutionSerializer);

@@ -5,6 +5,7 @@ using SharpIDE.Application.Features.Analysis;
 using SharpIDE.Application.Features.Build;
 using SharpIDE.Application.Features.Events;
 using SharpIDE.Application.Features.FilePersistence;
+using SharpIDE.Application.Features.FileSystem;
 using SharpIDE.Application.Features.FileWatching;
 using SharpIDE.Application.Features.NavigationHistory;
 using SharpIDE.Application.Features.Run;
@@ -153,7 +154,8 @@ public partial class IdeRoot : Control
 		{
 			GD.Print($"Selected: {path}");
 			var timer = Stopwatch.StartNew();
-			var (solutionModel, vsSln, solutionSerializer) = await VsPersistenceSolutionService.ReadSolution(path);
+			var sharpIdeRootFolder = await FileSystemService.GetSharpIdeRootFolderForSolutionAsync(path);
+			var (solutionModel, vsSln, solutionSerializer) = await VsPersistenceSolutionService.ReadSolution(path, sharpIdeRootFolder);
 			timer.Stop();
 			await _nodeReadyTcs.Task;
 			// Do not use injected services until after _nodeReadyTcs - Services aren't injected until _Ready
@@ -169,7 +171,7 @@ public partial class IdeRoot : Control
 			_fileChangedService.SolutionModel = solutionModel;
 			_sharpIdeSolutionModificationService.SolutionModel = solutionModel;
 			_ = Task.GodotRun(_solutionExplorerPanel.BindToSolution);
-			_roslynAnalysis.StartLoadingSolutionInWorkspace(solutionModel);
+			_roslynAnalysis.StartLoadingSolutionInWorkspace(solutionModel, sharpIdeRootFolder);
 			_fileWatcher.StartWatching(solutionModel);
 			
 			var previousTabs = Singletons.AppState.RecentSlns.Single(s => s.FilePath == solutionModel.FilePath).IdeSolutionState.OpenTabs;

@@ -5,6 +5,7 @@ using Microsoft.TemplateEngine.Abstractions;
 using SharpIDE.Application.Features.Analysis;
 using SharpIDE.Application.Features.Build;
 using SharpIDE.Application.Features.DotnetNew;
+using SharpIDE.Application.Features.FileSystem;
 using SharpIDE.Application.Features.FileWatching;
 using SharpIDE.Application.Features.SolutionDiscovery.VsPersistence;
 
@@ -37,12 +38,14 @@ public class RoslynAnalysisTests
 
 	    var roslynAnalysis = new RoslynAnalysis(logger, buildService, analyzerFileWatcher);
 
-	    var (solutionModel, _, _) = await VsPersistenceSolutionService.ReadSolution(@"C:\Users\Matthew\Documents\Git\SharpIDE\SharpIDE.slnx", TestContext.Current.CancellationToken);
+	    var slnFolderPath = @"C:\Users\Matthew\Documents\Git\SharpIDE\SharpIDE.slnx";
+	    var rootFolder = await FileSystemService.GetSharpIdeRootFolderForSolutionAsync(slnFolderPath);
+	    var (solutionModel, _, _) = await VsPersistenceSolutionService.ReadSolution(slnFolderPath, rootFolder, TestContext.Current.CancellationToken);
 	    var sharpIdeApplicationProject = solutionModel.AllProjects.Single(p => p.Name.Value == "SharpIDE.Application");
 
 	    var timer = Stopwatch.StartNew();
 		roslynAnalysis._solutionLoadedTcs = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
-	    await roslynAnalysis.LoadSolutionInWorkspace(solutionModel, TestContext.Current.CancellationToken);
+	    await roslynAnalysis.LoadSolutionInWorkspace(solutionModel, rootFolder, TestContext.Current.CancellationToken);
 	    timer.Stop();
 	    _testOutputHelper.WriteLine($"Solution load: {timer.ElapsedMilliseconds} ms");
 

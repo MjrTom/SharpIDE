@@ -1,6 +1,7 @@
 ﻿using System.Collections.Concurrent;
 using System.Diagnostics.CodeAnalysis;
 using ObservableCollections;
+using SharpIDE.Application.Features.FileSystem;
 using SharpIDE.Application.Features.SolutionDiscovery.VsPersistence;
 
 namespace SharpIDE.Application.Features.SolutionDiscovery;
@@ -18,7 +19,7 @@ public class SharpIdeSolutionModel : ISharpIdeNode, IExpandableSharpIdeNode, ISo
 	public bool Expanded { get; set; }
 
 	[SetsRequiredMembers]
-	internal SharpIdeSolutionModel(string solutionFilePath, IntermediateSolutionModel intermediateModel)
+	internal SharpIdeSolutionModel(string solutionFilePath, IntermediateSolutionModel intermediateModel, SharpIdeRootFolder sharpIdeRootFolder)
 	{
 		var solutionName = Path.GetFileName(solutionFilePath);
 		var allProjects = new ConcurrentBag<SharpIdeProjectModel>();
@@ -27,10 +28,19 @@ public class SharpIdeSolutionModel : ISharpIdeNode, IExpandableSharpIdeNode, ISo
 		Name = solutionName;
 		FilePath = solutionFilePath;
 		DirectoryPath = Path.GetDirectoryName(solutionFilePath)!;
-		Projects = new ObservableHashSet<SharpIdeProjectModel>(intermediateModel.Projects.Select(s => new SharpIdeProjectModel(s, allProjects, allFiles, allFolders, this)));
-		SlnFolders = new ObservableHashSet<SharpIdeSolutionFolder>(intermediateModel.SolutionFolders.Select(s => new SharpIdeSolutionFolder(s, allProjects, allFiles, allFolders, this)));
+		Projects = new ObservableHashSet<SharpIdeProjectModel>(intermediateModel.Projects.Select(s => new SharpIdeProjectModel(s, allProjects, allFiles, allFolders, this, sharpIdeRootFolder)));
+		SlnFolders = new ObservableHashSet<SharpIdeSolutionFolder>(intermediateModel.SolutionFolders.Select(s => new SharpIdeSolutionFolder(s, allProjects, allFiles, allFolders, this, sharpIdeRootFolder)));
 		AllProjects = allProjects.ToHashSet();
 		AllFiles = new ConcurrentDictionary<string, SharpIdeFile>(allFiles.DistinctBy(s => s.Path).ToDictionary(s => s.Path));
 		AllFolders = allFolders.ToHashSet();
+	}
+}
+
+public static class SharpIdeSolutionModelExtensions
+{
+	public static SharpIdeProjectModel? GetProjectForContainingFolderPath(this SharpIdeSolutionModel solution, SharpIdeFolder folder)
+	{
+		var sharpIdeProject = solution.AllProjects.SingleOrDefault(s => s.DirectoryPath == folder.Path);
+		return sharpIdeProject;
 	}
 }
