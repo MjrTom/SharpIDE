@@ -350,6 +350,8 @@ public partial class SolutionExplorerPanel : MarginContainer
 			var folderCount = sharpIdeParent.Folders.Count;
 			newStartingIndex += folderCount;
 		}
+		var disposableBuilder = Disposable.CreateBuilder();
+		
 		var fileItem = tree.CreateItem(parent, newStartingIndex);
 		fileItem.SetText(0, sharpIdeFile.Name.Value);
 		fileItem.SetIconsForFileExtension(sharpIdeFile);
@@ -357,16 +359,18 @@ public partial class SolutionExplorerPanel : MarginContainer
 		else fileItem.ClearCustomColor(0);
 		fileItem.SharpIdeNode = sharpIdeFile;
 		
-		Observable.EveryValueChanged(sharpIdeFile, file => file.Name.Value)
-			.Skip(1).SubscribeOnThreadPool().ObserveOnThreadPool().SubscribeAwait(async (s, ct) =>
+		sharpIdeFile.Name.Skip(1).SubscribeOnThreadPool().ObserveOnThreadPool()
+			.SubscribeAwait(async (newName, ct) =>
 			{
 				await this.InvokeAsync(() =>
 				{
-					fileItem.SetText(0, s);
+					GD.Print($"Updating file name in solution explorer to '{newName}'");
+					fileItem.SetText(0, newName);
 					fileItem.SetIconsForFileExtension(sharpIdeFile);
 				});
-			}, configureAwait: false).AddToDeferred(this);
-		
+			}, configureAwait: false)
+			.AddTo(ref disposableBuilder);
+		fileItem.SharpIdeDisposable = disposableBuilder.Build();
 		return fileItem;
 	}
 	
