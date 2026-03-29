@@ -189,6 +189,7 @@ public partial class ProblemsPanel : Control
     [RequiresGodotUiThread]
     private void FreeTreeItem(TreeItem? treeItem)
     {
+        treeItem?.SharpIdeDisposable?.Dispose();
         treeItem?.Free();
     }
     
