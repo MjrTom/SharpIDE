@@ -9,7 +9,7 @@ public class SharpIdeFileComparer : IComparer<SharpIdeFile>
 		if (x is null) return -1;
 		if (y is null) return 1;
 
-		int result = string.Compare(x.Path, y.Path, StringComparison.OrdinalIgnoreCase);
+		int result = string.Compare(x.Name.Value, y.Name.Value, StringComparison.OrdinalIgnoreCase);
 
 		return result;
 	}
