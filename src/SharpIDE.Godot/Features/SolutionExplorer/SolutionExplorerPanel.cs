@@ -302,12 +302,13 @@ public partial class SolutionExplorerPanel : MarginContainer
 		folderItem.SetText(0, sharpIdeFolder.Name.Value);
 		folderItem.SetIcon(0, FolderIcon);
 		folderItem.SharpIdeNode = sharpIdeFolder;
-		
+
+		var disposableBuilder = Disposable.CreateBuilder();
 		Observable.EveryValueChanged(sharpIdeFolder, folder => folder.Name.Value)
 			.Skip(1).SubscribeOnThreadPool().ObserveOnThreadPool().SubscribeAwait(async (s, ct) =>
 			{
 				await this.InvokeAsync(() => folderItem.SetText(0, s));
-			}, configureAwait: false).AddToDeferred(this);
+			}, configureAwait: false).AddTo(ref disposableBuilder);
 		
 		// Observe subfolders
 		var subFoldersView = sharpIdeFolder.Folders.CreateView(y => new TreeItemContainer());
@@ -320,7 +321,7 @@ public partial class SolutionExplorerPanel : MarginContainer
 				NotifyCollectionChangedAction.Move => MoveTreeItem(_tree, innerEvent.NewItem.View, innerEvent.NewItem.Value, innerEvent.OldStartingIndex, innerEvent.NewStartingIndex),
 				NotifyCollectionChangedAction.Remove => FreeTreeItem(innerEvent.OldItem.View.Value),
 				_ => Task.CompletedTask
-			}), configureAwait: false).AddToDeferred(this);
+			}), configureAwait: false).AddTo(ref disposableBuilder);
 
 		// Observe files
 		var filesView = sharpIdeFolder.Files.CreateView(y => new TreeItemContainer());
@@ -332,7 +333,8 @@ public partial class SolutionExplorerPanel : MarginContainer
 				NotifyCollectionChangedAction.Move => MoveTreeItem(_tree, innerEvent.NewItem.View, innerEvent.NewItem.Value, innerEvent.OldStartingIndex, innerEvent.NewStartingIndex),
 				NotifyCollectionChangedAction.Remove => FreeTreeItem(innerEvent.OldItem.View.Value),
 				_ => Task.CompletedTask
-			}), configureAwait: false).AddToDeferred(this);
+			}), configureAwait: false).AddTo(ref disposableBuilder);
+		folderItem.SharpIdeDisposable = disposableBuilder.Build();
 		return folderItem;
 	}
 
@@ -389,6 +391,10 @@ public partial class SolutionExplorerPanel : MarginContainer
 
 	private async Task FreeTreeItem(TreeItem? item)
 	{
-	    await this.InvokeAsync(() => item?.Free());
+	    await this.InvokeAsync(() =>
+	    {
+		    item?.SharpIdeDisposable?.Dispose();
+		    item?.Free();
+	    });
 	}
 }

@@ -141,6 +141,7 @@ public static class NodeExtensions
 
     private static readonly ConditionalWeakTable<TreeItem, ISharpIdeNode> TreeItemSharpIdeNode = [];
     private static readonly ConditionalWeakTable<TreeItem, SharpIdeDiagnostic> TreeItemSharpIdeDiagnostic = [];
+    private static readonly ConditionalWeakTable<TreeItem, IDisposable> TreeItemDisposable = [];
     extension(TreeItem treeItem)
     {
         public ISharpIdeNode? SharpIdeNode
@@ -152,6 +153,11 @@ public static class NodeExtensions
         {
             get => TreeItemSharpIdeDiagnostic.TryGetValue(treeItem, out var s) ? s : null;
             set => TreeItemSharpIdeDiagnostic.AddOrUpdateOrRemove(treeItem, value);
+        }
+        public IDisposable? SharpIdeDisposable
+        {
+            get => TreeItemDisposable.TryGetValue(treeItem, out var s) ? s : null;
+            set => TreeItemDisposable.AddOrUpdateOrRemove(treeItem, value);
         }
         public void MoveToIndexInParent(int currentIndex, int newIndex)
         {
