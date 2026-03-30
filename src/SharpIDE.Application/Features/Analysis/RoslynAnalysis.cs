@@ -84,8 +84,11 @@ public partial class RoslynAnalysis(ILogger<RoslynAnalysis> logger, BuildService
 		{
 			try
 			{
+				CreateWorkspace();
 				await LoadSolutionInWorkspace(solutionModel, sharpIdeRootFolder);
-				await UpdateSolutionDiagnostics();
+				var diagnosticsTask = UpdateSolutionDiagnostics();
+				LoadCodeActions();
+				await diagnosticsTask;
 			}
 			catch (Exception e)
 			{
@@ -100,7 +103,7 @@ public partial class RoslynAnalysis(ILogger<RoslynAnalysis> logger, BuildService
 		_sharpIdeSolutionModel = solutionModel;
 		var timer = Stopwatch.StartNew();
 
-		if (_workspace is null) CreateWorkspace();
+		Guard.Against.Null(_workspace);
 
 		using (var ___ = SharpIdeOtel.Source.StartActivity("RestoreSolution"))
 		{
@@ -131,21 +134,6 @@ public partial class RoslynAnalysis(ILogger<RoslynAnalysis> logger, BuildService
 		timer.Stop();
 		_logger.LogInformation("RoslynAnalysis: Solution loaded in {ElapsedMilliseconds}ms", timer.ElapsedMilliseconds);
 		_solutionLoadedTcs.SetResult();
-
-		using (var ____ = SharpIdeOtel.Source.StartActivity("LoadAnalyzersAndFixers"))
-		{
-			foreach (var assembly in MefHostServices.DefaultAssemblies)
-			{
-				// These could be loaded from the composition via _workspace.CurrentSolution.Services.ExportProvider.GetExports<Lazy<CodeFixProvider, CodeChangeProviderMetadata>>().ToList(),
-				// however we need all the CodeFixProviders/CodeRefactoringProviders immediately on the first code action request, so I would prefer to do it here
-				var fixers = CodeFixProviderLoader.LoadCodeFixProviders([assembly], LanguageNames.CSharp);
-				_codeFixProviders.AddRange(fixers);
-				var refactoringProviders = CodeRefactoringProviderLoader.LoadCodeRefactoringProviders([assembly], LanguageNames.CSharp);
-				_codeRefactoringProviders.AddRange(refactoringProviders);
-			}
-			_codeRefactoringProviders = _codeRefactoringProviders.DistinctBy(s => s.GetType().Name).ToHashSet();
-			_codeFixProviders = _codeFixProviders.DistinctBy(s => s.GetType().Name).ToHashSet();
-		}
 	}
 
 	private void CreateWorkspace()
@@ -185,6 +173,23 @@ public partial class RoslynAnalysis(ILogger<RoslynAnalysis> logger, BuildService
 		_documentMappingService = container.GetExports<IDocumentMappingService>().FirstOrDefault();
 
 		_msBuildProjectLoader = new CustomMsBuildProjectLoader(_workspace);
+	}
+
+	private static void LoadCodeActions()
+	{
+		using var _ = SharpIdeOtel.Source.StartActivity();
+		if (_codeFixProviders.Count is not 0 || _codeRefactoringProviders.Count is not 0) return;
+		foreach (var assembly in MefHostServices.DefaultAssemblies)
+		{
+			// These could be loaded from the composition via _workspace.CurrentSolution.Services.ExportProvider.GetExports<Lazy<CodeFixProvider, CodeChangeProviderMetadata>>().ToList(),
+			// however we need all the CodeFixProviders/CodeRefactoringProviders immediately on the first code action request, so I would prefer to do it here
+			var fixers = CodeFixProviderLoader.LoadCodeFixProviders([assembly], LanguageNames.CSharp);
+			_codeFixProviders.AddRange(fixers);
+			var refactoringProviders = CodeRefactoringProviderLoader.LoadCodeRefactoringProviders([assembly], LanguageNames.CSharp);
+			_codeRefactoringProviders.AddRange(refactoringProviders);
+		}
+		_codeRefactoringProviders = _codeRefactoringProviders.DistinctBy(s => s.GetType().Name).ToHashSet();
+		_codeFixProviders = _codeFixProviders.DistinctBy(s => s.GetType().Name).ToHashSet();
 	}
 
 	/// Callers should call UpdateSolutionDiagnostics after this
