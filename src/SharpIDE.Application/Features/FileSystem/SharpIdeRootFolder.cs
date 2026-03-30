@@ -19,7 +19,6 @@ public class SharpIdeRootFolder : SharpIdeFolder
 
 		Path = folderInfo.FullName;
 		Name = new ReactiveProperty<string>(folderInfo.Name);
-		IsCsprojRootFolder = false; // TODO: Could be true
 		Parent = null!;
 
 		Files = new ObservableList<SharpIdeFile>(folderInfo.GetFiles(this, allFiles));
