@@ -1,0 +1,222 @@
+[gd_scene format=3 uid="uid://jwicjportstw"]
+
+[ext_resource type="Script" uid="uid://dbo6bdq31eilg" path="res://Features/NewProject/TemplateComponent.cs" id="1_uj4rm"]
+
+[sub_resource type="StyleBoxEmpty" id="StyleBoxEmpty_qnbw8"]
+
+[node name="TemplateComponent" type="VBoxContainer" unique_id=1036909573]
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("1_uj4rm")
+
+[node name="ScrollContainer" type="ScrollContainer" parent="." unique_id=973907368]
+layout_mode = 2
+size_flags_vertical = 3
+
+[node name="VBoxContainer" type="VBoxContainer" parent="ScrollContainer" unique_id=1768007884]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="HBoxContainer" type="HBoxContainer" parent="ScrollContainer/VBoxContainer" unique_id=1322354822]
+layout_mode = 2
+
+[node name="Label" type="Label" parent="ScrollContainer/VBoxContainer/HBoxContainer" unique_id=891344473]
+layout_mode = 2
+theme_type_variation = &"Gray700Label"
+text = "Project Name: "
+
+[node name="ProjectNameLineEdit" type="LineEdit" parent="ScrollContainer/VBoxContainer/HBoxContainer" unique_id=939561505]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="HBoxContainer2" type="HBoxContainer" parent="ScrollContainer/VBoxContainer" unique_id=1356640098]
+layout_mode = 2
+
+[node name="Label" type="Label" parent="ScrollContainer/VBoxContainer/HBoxContainer2" unique_id=1314244056]
+layout_mode = 2
+theme_type_variation = &"Gray700Label"
+text = "Project Directory: "
+
+[node name="ProjectDirectoryLineEdit" type="LineEdit" parent="ScrollContainer/VBoxContainer/HBoxContainer2" unique_id=895216672]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="HBoxContainer7" type="HBoxContainer" parent="ScrollContainer/VBoxContainer" unique_id=727545348]
+layout_mode = 2
+
+[node name="Label" type="Label" parent="ScrollContainer/VBoxContainer/HBoxContainer7" unique_id=1821284741]
+layout_mode = 2
+theme_type_variation = &"Gray600Label"
+theme_override_font_sizes/font_size = 14
+text = "This project will be created in "
+
+[node name="ProjectDirectoryAndProjectNameLabel" type="Label" parent="ScrollContainer/VBoxContainer/HBoxContainer7" unique_id=1515593911]
+unique_name_in_owner = true
+layout_mode = 2
+theme_type_variation = &"Gray600Label"
+theme_override_font_sizes/font_size = 14
+text = "./dir/ProjectName"
+
+[node name="HBoxContainer3" type="HBoxContainer" parent="ScrollContainer/VBoxContainer" unique_id=910945131]
+layout_mode = 2
+
+[node name="Label" type="Label" parent="ScrollContainer/VBoxContainer/HBoxContainer3" unique_id=1481248591]
+layout_mode = 2
+theme_type_variation = &"Gray700Label"
+text = "Target Framework:"
+
+[node name="TargetFrameworkOptionButton" type="OptionButton" parent="ScrollContainer/VBoxContainer/HBoxContainer3" unique_id=383569671]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+selected = 0
+item_count = 2
+popup/item_0/text = "net10.0"
+popup/item_0/id = 0
+popup/item_1/text = "net9.0"
+popup/item_1/id = 1
+
+[node name="HBoxContainer4" type="HBoxContainer" parent="ScrollContainer/VBoxContainer" unique_id=858864051]
+layout_mode = 2
+
+[node name="Label" type="Label" parent="ScrollContainer/VBoxContainer/HBoxContainer4" unique_id=639631749]
+layout_mode = 2
+theme_type_variation = &"Gray700Label"
+text = "Language: C#"
+
+[node name="HBoxContainer5" type="HBoxContainer" parent="ScrollContainer/VBoxContainer" unique_id=1197461427]
+layout_mode = 2
+
+[node name="Label" type="Label" parent="ScrollContainer/VBoxContainer/HBoxContainer5" unique_id=1739778515]
+layout_mode = 2
+theme_type_variation = &"Gray700Label"
+text = "Type: "
+
+[node name="TemplateTypeLabel" type="Label" parent="ScrollContainer/VBoxContainer/HBoxContainer5" unique_id=114831197]
+unique_name_in_owner = true
+layout_mode = 2
+theme_type_variation = &"Gray700Label"
+text = "Console App"
+
+[node name="HBoxContainer6" type="HBoxContainer" parent="ScrollContainer/VBoxContainer" unique_id=377307005]
+layout_mode = 2
+
+[node name="Label" type="Label" parent="ScrollContainer/VBoxContainer/HBoxContainer6" unique_id=2003803017]
+layout_mode = 2
+size_flags_vertical = 0
+theme_type_variation = &"Gray700Label"
+text = "Template: "
+
+[node name="TemplatesItemList" type="ItemList" parent="ScrollContainer/VBoxContainer/HBoxContainer6" unique_id=2043106798]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(0, 230)
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="FoldableContainer" type="FoldableContainer" parent="ScrollContainer/VBoxContainer" unique_id=398105867]
+layout_mode = 2
+theme_override_styles/title_panel = SubResource("StyleBoxEmpty_qnbw8")
+theme_override_styles/title_hover_panel = SubResource("StyleBoxEmpty_qnbw8")
+theme_override_styles/title_collapsed_panel = SubResource("StyleBoxEmpty_qnbw8")
+theme_override_styles/title_collapsed_hover_panel = SubResource("StyleBoxEmpty_qnbw8")
+theme_override_styles/panel = SubResource("StyleBoxEmpty_qnbw8")
+folded = true
+title = "Template Description"
+
+[node name="MarginContainer" type="MarginContainer" parent="ScrollContainer/VBoxContainer/FoldableContainer" unique_id=853103061]
+visible = false
+layout_mode = 2
+theme_override_constants/margin_left = 20
+theme_override_constants/margin_top = 10
+
+[node name="VBoxContainer" type="VBoxContainer" parent="ScrollContainer/VBoxContainer/FoldableContainer/MarginContainer" unique_id=1428675206]
+layout_mode = 2
+
+[node name="HBoxContainer" type="HBoxContainer" parent="ScrollContainer/VBoxContainer/FoldableContainer/MarginContainer/VBoxContainer" unique_id=674357251]
+layout_mode = 2
+
+[node name="Label" type="Label" parent="ScrollContainer/VBoxContainer/FoldableContainer/MarginContainer/VBoxContainer/HBoxContainer" unique_id=882632379]
+layout_mode = 2
+theme_type_variation = &"Gray700Label"
+text = "Short name: "
+
+[node name="TemplateShortNameLabel" type="Label" parent="ScrollContainer/VBoxContainer/FoldableContainer/MarginContainer/VBoxContainer/HBoxContainer" unique_id=914387928]
+unique_name_in_owner = true
+layout_mode = 2
+theme_type_variation = &"Gray700Label"
+text = "console"
+
+[node name="HBoxContainer2" type="HBoxContainer" parent="ScrollContainer/VBoxContainer/FoldableContainer/MarginContainer/VBoxContainer" unique_id=1315412137]
+layout_mode = 2
+
+[node name="Label" type="Label" parent="ScrollContainer/VBoxContainer/FoldableContainer/MarginContainer/VBoxContainer/HBoxContainer2" unique_id=289685504]
+layout_mode = 2
+theme_type_variation = &"Gray700Label"
+text = "Identity: "
+
+[node name="TemplateIdentityLabel" type="Label" parent="ScrollContainer/VBoxContainer/FoldableContainer/MarginContainer/VBoxContainer/HBoxContainer2" unique_id=1700513784]
+unique_name_in_owner = true
+layout_mode = 2
+theme_type_variation = &"Gray700Label"
+text = "Microsoft.Common.Console.CSharp.10.0"
+
+[node name="HBoxContainer3" type="HBoxContainer" parent="ScrollContainer/VBoxContainer/FoldableContainer/MarginContainer/VBoxContainer" unique_id=370145118]
+layout_mode = 2
+
+[node name="Label" type="Label" parent="ScrollContainer/VBoxContainer/FoldableContainer/MarginContainer/VBoxContainer/HBoxContainer3" unique_id=238198524]
+layout_mode = 2
+theme_type_variation = &"Gray700Label"
+text = "Group identity: "
+
+[node name="TemplateGroupIdentityLabel" type="Label" parent="ScrollContainer/VBoxContainer/FoldableContainer/MarginContainer/VBoxContainer/HBoxContainer3" unique_id=725771427]
+unique_name_in_owner = true
+layout_mode = 2
+theme_type_variation = &"Gray700Label"
+text = "Microsoft.Common.Console"
+
+[node name="HBoxContainer4" type="HBoxContainer" parent="ScrollContainer/VBoxContainer/FoldableContainer/MarginContainer/VBoxContainer" unique_id=717838129]
+layout_mode = 2
+
+[node name="Label" type="Label" parent="ScrollContainer/VBoxContainer/FoldableContainer/MarginContainer/VBoxContainer/HBoxContainer4" unique_id=1012835721]
+layout_mode = 2
+theme_type_variation = &"Gray700Label"
+text = "Author: "
+
+[node name="TemplateAuthorLabel" type="Label" parent="ScrollContainer/VBoxContainer/FoldableContainer/MarginContainer/VBoxContainer/HBoxContainer4" unique_id=265156320]
+unique_name_in_owner = true
+layout_mode = 2
+theme_type_variation = &"Gray700Label"
+text = "Microsoft"
+
+[node name="HBoxContainer5" type="HBoxContainer" parent="ScrollContainer/VBoxContainer/FoldableContainer/MarginContainer/VBoxContainer" unique_id=1048925954]
+layout_mode = 2
+
+[node name="Label" type="Label" parent="ScrollContainer/VBoxContainer/FoldableContainer/MarginContainer/VBoxContainer/HBoxContainer5" unique_id=1530200749]
+layout_mode = 2
+theme_type_variation = &"Gray700Label"
+text = "Classifications: "
+
+[node name="TemplateClassificationsLabel" type="Label" parent="ScrollContainer/VBoxContainer/FoldableContainer/MarginContainer/VBoxContainer/HBoxContainer5" unique_id=799778897]
+unique_name_in_owner = true
+layout_mode = 2
+theme_type_variation = &"Gray700Label"
+text = "Common; Console"
+
+[node name="HBoxContainer" type="HBoxContainer" parent="." unique_id=1379891985]
+layout_mode = 2
+alignment = 2
+
+[node name="CreateTemplateButton" type="Button" parent="HBoxContainer" unique_id=1257716889]
+unique_name_in_owner = true
+layout_mode = 2
+text = "Create"
+
+[node name="CancelButton" type="Button" parent="HBoxContainer" unique_id=313071932]
+unique_name_in_owner = true
+layout_mode = 2
+text = "Cancel"

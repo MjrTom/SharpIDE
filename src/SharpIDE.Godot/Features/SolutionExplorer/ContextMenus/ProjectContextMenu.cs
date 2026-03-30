@@ -4,6 +4,7 @@ using SharpIDE.Application.Features.Build;
 using SharpIDE.Application.Features.Evaluation;
 using SharpIDE.Application.Features.Events;
 using SharpIDE.Application.Features.Run;
+using SharpIDE.Application.Features.SolutionDiscovery;
 using SharpIDE.Application.Features.SolutionDiscovery.VsPersistence;
 using SharpIDE.Godot.Features.BottomPanel;
 
@@ -43,7 +44,7 @@ public partial class SolutionExplorerPanel
         menu.AddSeparator();
         createNewSubmenu.AddItem("Directory", (int)CreateNewSubmenuOptions.Directory);
         createNewSubmenu.AddItem("C# File", (int)CreateNewSubmenuOptions.CSharpFile);
-        createNewSubmenu.IdPressed += id => OnCreateNewSubmenuPressed(id, project);
+        createNewSubmenu.IdPressed += id => OnCreateNewSubmenuPressed(id, project.Folder);
 
         if (project is { IsLoaded: true, IsRunnable: true })
         {

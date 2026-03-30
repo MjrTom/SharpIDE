@@ -1,38 +1,44 @@
-﻿using SharpIDE.Application.Features.SolutionDiscovery;
+using SharpIDE.Application.Features.FileSystem;
+using SharpIDE.Application.Features.SolutionDiscovery;
 using SharpIDE.Application.Features.SolutionDiscovery.VsPersistence;
 
 namespace SharpIDE.Application.Features.FileWatching;
 
-public class IdeFileOperationsService(SharpIdeSolutionModificationService sharpIdeSolutionModificationService)
+public class IdeFileOperationsService(SharpIdeRootFolderModificationService rootFolderModificationService, IdeFileExternalChangeHandler ideFileExternalChangeHandler)
 {
-	private readonly SharpIdeSolutionModificationService _sharpIdeSolutionModificationService = sharpIdeSolutionModificationService;
+	private readonly SharpIdeRootFolderModificationService _rootFolderModificationService = rootFolderModificationService;
+	private readonly IdeFileExternalChangeHandler _ideFileExternalChangeHandler = ideFileExternalChangeHandler;
 
 	public async Task RenameDirectory(SharpIdeFolder folder, string newDirectoryName)
 	{
 		var parentPath = Path.GetDirectoryName(folder.Path)!;
 		var newDirectoryPath = Path.Combine(parentPath, newDirectoryName);
+		using var _ = await _ideFileExternalChangeHandler.IdeChangeLock.LockAsync();
 		Directory.Move(folder.Path, newDirectoryPath);
-		await _sharpIdeSolutionModificationService.RenameDirectory(folder, newDirectoryName);
+		await _rootFolderModificationService.RenameDirectory(folder, newDirectoryName);
 	}
 
-	public async Task CreateDirectory(IFolderOrProject parentNode, string newDirectoryName)
+	public async Task CreateDirectory(SharpIdeFolder parentFolder, string newDirectoryName)
 	{
-		var newDirectoryPath = Path.Combine(parentNode.ChildNodeBasePath, newDirectoryName);
+		var newDirectoryPath = Path.Combine(parentFolder.ChildNodeBasePath, newDirectoryName);
+		using var _ = await _ideFileExternalChangeHandler.IdeChangeLock.LockAsync();
 		Directory.CreateDirectory(newDirectoryPath);
-		var newFolder = await _sharpIdeSolutionModificationService.AddDirectory(parentNode, newDirectoryName);
+		await _rootFolderModificationService.AddDirectory(parentFolder, newDirectoryName);
 	}
 
 	public async Task DeleteDirectory(SharpIdeFolder folder)
 	{
+		using var _ = await _ideFileExternalChangeHandler.IdeChangeLock.LockAsync();
 		Directory.Delete(folder.Path, true);
-		await _sharpIdeSolutionModificationService.RemoveDirectory(folder);
+		await _rootFolderModificationService.RemoveDirectory(folder);
 	}
 
-	public async Task CopyDirectory(IFolderOrProject destinationParentNode, string sourceDirectoryPath, string newDirectoryName)
+	public async Task CopyDirectory(SharpIdeFolder destinationParentFolder, string sourceDirectoryPath, string newDirectoryName)
 	{
-		var newDirectoryPath = Path.Combine(destinationParentNode.ChildNodeBasePath, newDirectoryName);
+		var newDirectoryPath = Path.Combine(destinationParentFolder.ChildNodeBasePath, newDirectoryName);
+		using var _ = await _ideFileExternalChangeHandler.IdeChangeLock.LockAsync();
 		CopyAll(new DirectoryInfo(sourceDirectoryPath), new DirectoryInfo(newDirectoryPath));
-		var newFolder = await _sharpIdeSolutionModificationService.AddDirectory(destinationParentNode, newDirectoryName);
+		await _rootFolderModificationService.AddDirectory(destinationParentFolder, newDirectoryName);
 		return;
 
 		static void CopyAll(DirectoryInfo source, DirectoryInfo target)
@@ -51,38 +57,42 @@ public class IdeFileOperationsService(SharpIdeSolutionModificationService sharpI
 		}
 	}
 
-	public async Task MoveDirectory(IFolderOrProject destinationParentNode, SharpIdeFolder folderToMove)
+	public async Task MoveDirectory(SharpIdeFolder destinationParentFolder, SharpIdeFolder folderToMove)
 	{
-		var newDirectoryPath = Path.Combine(destinationParentNode.ChildNodeBasePath, folderToMove.Name.Value);
+		var newDirectoryPath = Path.Combine(destinationParentFolder.ChildNodeBasePath, folderToMove.Name.Value);
+		using var _ = await _ideFileExternalChangeHandler.IdeChangeLock.LockAsync();
 		Directory.Move(folderToMove.Path, newDirectoryPath);
-		await _sharpIdeSolutionModificationService.MoveDirectory(destinationParentNode, folderToMove);
+		await _rootFolderModificationService.MoveDirectory(destinationParentFolder, folderToMove);
 	}
 
 	public async Task DeleteFile(SharpIdeFile file)
 	{
+		using var _ = await _ideFileExternalChangeHandler.IdeChangeLock.LockAsync();
 		File.Delete(file.Path);
-		await _sharpIdeSolutionModificationService.RemoveFile(file);
+		await _rootFolderModificationService.RemoveFile(file);
 	}
 
-	public async Task<SharpIdeFile> CreateCsFile(IFolderOrProject parentNode, string newFileName, string typeKeyword)
+	public async Task<SharpIdeFile> CreateCsFile(SharpIdeFolder parentFolder, string newFileName, string typeKeyword)
 	{
-		var newFilePath = Path.Combine(GetFileParentNodePath(parentNode), newFileName);
+		var newFilePath = Path.Combine(parentFolder.Path, newFileName);
 		if (File.Exists(newFilePath)) throw new InvalidOperationException($"File {newFilePath} already exists.");
 		var className = Path.GetFileNameWithoutExtension(newFileName);
-		var @namespace = NewFileTemplates.ComputeNamespace(parentNode);
+		var @namespace = NewFileTemplates.ComputeNamespace(parentFolder);
 		var fileText = NewFileTemplates.CsharpFile(className, @namespace, typeKeyword);
+		using var _ = await _ideFileExternalChangeHandler.IdeChangeLock.LockAsync();
 		await File.WriteAllTextAsync(newFilePath, fileText);
-		var sharpIdeFile = await _sharpIdeSolutionModificationService.CreateFile(parentNode, newFilePath, newFileName, fileText);
+		var sharpIdeFile = await _rootFolderModificationService.CreateFile(parentFolder, newFilePath, newFileName, fileText);
 		return sharpIdeFile;
 	}
 
-	public async Task<SharpIdeFile> CopyFile(IFolderOrProject destinationParentNode, string sourceFilePath, string newFileName)
+	public async Task<SharpIdeFile> CopyFile(SharpIdeFolder destinationParentFolder, string sourceFilePath, string newFileName)
 	{
-		var newFilePath = Path.Combine(GetFileParentNodePath(destinationParentNode), newFileName);
+		var newFilePath = Path.Combine(destinationParentFolder.Path, newFileName);
 		if (File.Exists(newFilePath)) throw new InvalidOperationException($"File {newFilePath} already exists.");
 		var fileContents = await File.ReadAllTextAsync(sourceFilePath);
+		using var _ = await _ideFileExternalChangeHandler.IdeChangeLock.LockAsync();
 		File.Copy(sourceFilePath, newFilePath);
-		var sharpIdeFile = await _sharpIdeSolutionModificationService.CreateFile(destinationParentNode, newFilePath, newFileName, fileContents);
+		var sharpIdeFile = await _rootFolderModificationService.CreateFile(destinationParentFolder, newFilePath, newFileName, fileContents);
 		return sharpIdeFile;
 	}
 
@@ -91,24 +101,19 @@ public class IdeFileOperationsService(SharpIdeSolutionModificationService sharpI
 		var parentPath = Path.GetDirectoryName(file.Path)!;
 		var newFilePath = Path.Combine(parentPath, newFileName);
 		if (File.Exists(newFilePath)) throw new InvalidOperationException($"File {newFilePath} already exists.");
+		using var _ = await _ideFileExternalChangeHandler.IdeChangeLock.LockAsync();
 		File.Move(file.Path, newFilePath);
-		var sharpIdeFile = await _sharpIdeSolutionModificationService.RenameFile(file, newFileName);
+		var sharpIdeFile = await _rootFolderModificationService.RenameFile(file, newFileName);
 		return sharpIdeFile;
 	}
 
-	public async Task<SharpIdeFile> MoveFile(IFolderOrProject destinationParentNode, SharpIdeFile fileToMove)
+	public async Task<SharpIdeFile> MoveFile(SharpIdeFolder destinationParentFolder, SharpIdeFile fileToMove)
 	{
-		var newFilePath = Path.Combine(destinationParentNode.ChildNodeBasePath, fileToMove.Name.Value);
+		var newFilePath = Path.Combine(destinationParentFolder.ChildNodeBasePath, fileToMove.Name.Value);
 		if (File.Exists(newFilePath)) throw new InvalidOperationException($"File {newFilePath} already exists.");
+		using var _ = await _ideFileExternalChangeHandler.IdeChangeLock.LockAsync();
 		File.Move(fileToMove.Path, newFilePath);
-		var sharpIdeFile = await _sharpIdeSolutionModificationService.MoveFile(destinationParentNode, fileToMove);
+		var sharpIdeFile = await _rootFolderModificationService.MoveFile(destinationParentFolder, fileToMove);
 		return sharpIdeFile;
 	}
-
-	private static string GetFileParentNodePath(IFolderOrProject parentNode) => parentNode switch
-	{
-		SharpIdeFolder folder => folder.Path,
-		SharpIdeProjectModel project => Path.GetDirectoryName(project.FilePath)!,
-		_ => throw new InvalidOperationException("Parent node must be a folder or project")
-	};
 }

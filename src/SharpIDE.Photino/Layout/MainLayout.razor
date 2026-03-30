@@ -10,6 +10,7 @@
 @inject BuildService BuildService
 @inject AppState AppState
 @inject RoslynAnalysis RoslynAnalysis
+@inject VsPersistenceSolutionService VsPersistenceSolutionService
 
 <MudLayout Style="height: 100%">
 	<MudAppBar Dense="true" Gutters="false" Class="px-2">
@@ -183,7 +184,7 @@
 		var solutionFilePath = (string)result.Data!;
 		_solutionFilePath = solutionFilePath;
 
-		var solutionModel = await VsPersistenceMapper.GetSolutionModel(_solutionFilePath);
+		var (solutionModel, _, _) = await VsPersistenceSolutionService.ReadSolution(_solutionFilePath);
 		_solutionModel = solutionModel;
 		RoslynAnalysis.StartLoadingSolutionInWorkspace(solutionModel);
 	}

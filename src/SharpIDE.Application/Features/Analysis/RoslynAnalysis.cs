@@ -37,6 +37,7 @@ using SharpIDE.Application.Features.Analysis.ProjectLoader;
 using SharpIDE.Application.Features.Analysis.Razor;
 using SharpIDE.Application.Features.Analysis.WorkspaceServices;
 using SharpIDE.Application.Features.Build;
+using SharpIDE.Application.Features.FileSystem;
 using SharpIDE.Application.Features.FileWatching;
 using SharpIDE.Application.Features.SolutionDiscovery;
 using SharpIDE.Application.Features.SolutionDiscovery.VsPersistence;
@@ -75,15 +76,19 @@ public partial class RoslynAnalysis(ILogger<RoslynAnalysis> logger, BuildService
 
 	public TaskCompletionSource _solutionLoadedTcs = null!;
 	private SharpIdeSolutionModel? _sharpIdeSolutionModel;
-	public void StartLoadingSolutionInWorkspace(SharpIdeSolutionModel solutionModel)
+	private SharpIdeRootFolder? _sharpIdeRootFolder;
+	public void StartLoadingSolutionInWorkspace(SharpIdeSolutionModel solutionModel, SharpIdeRootFolder sharpIdeRootFolder)
 	{
 		_solutionLoadedTcs = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
 		_ = Task.Run(async () =>
 		{
 			try
 			{
-				await LoadSolutionInWorkspace(solutionModel);
-				await UpdateSolutionDiagnostics();
+				CreateWorkspace();
+				await LoadSolutionInWorkspace(solutionModel, sharpIdeRootFolder);
+				var diagnosticsTask = UpdateSolutionDiagnostics();
+				LoadCodeActions();
+				await diagnosticsTask;
 			}
 			catch (Exception e)
 			{
@@ -91,69 +96,50 @@ public partial class RoslynAnalysis(ILogger<RoslynAnalysis> logger, BuildService
 			}
 		});
 	}
-	public async Task LoadSolutionInWorkspace(SharpIdeSolutionModel solutionModel, CancellationToken cancellationToken = default)
+	public async Task LoadSolutionInWorkspace(SharpIdeSolutionModel solutionModel, SharpIdeRootFolder sharpIdeRootFolder, CancellationToken cancellationToken = default)
 	{
 		using var _ = SharpIdeOtel.Source.StartActivity($"{nameof(RoslynAnalysis)}.{nameof(LoadSolutionInWorkspace)}");
 		_logger.LogInformation("RoslynAnalysis: Loading solution {SolutionPath}", solutionModel.FilePath);
 		_sharpIdeSolutionModel = solutionModel;
 		var timer = Stopwatch.StartNew();
-		if (_workspace is null)
-		{
-			using var __ = SharpIdeOtel.Source.StartActivity("CreateWorkspace");
-			var configuration = new ContainerConfiguration()
-				.WithAssemblies(MefHostServices.DefaultAssemblies)
-				.WithAssembly(typeof(RemoteSnapshotManager).Assembly)
-				.WithPart<CSharpDecompilationService2>()
-				.WithPart<DecompileWholeAssemblyToProjectMetadataAsSourceFileProvider>()
-				.WithPart<PythiaStub>();
 
-			// TODO: dispose container at some point?
-			var container = configuration.CreateContainer();
+		Guard.Against.Null(_workspace);
 
-			var host = MefHostServices.Create(container);
-			_workspace = new AdhocWorkspace(host);
-			_workspace.RegisterWorkspaceFailedHandler(o => _logger.LogError("WorkspaceFailedHandler - Workspace failure: {DiagnosticMessage}", o.Diagnostic.Message));
+		await LoadSolutionCoreAsync(_sharpIdeSolutionModel.FilePath, cancellationToken);
 
-			var snapshotManager = container.GetExports<RemoteSnapshotManager>().FirstOrDefault();
-			_snapshotManager = snapshotManager;
+		timer.Stop();
+		_logger.LogInformation("RoslynAnalysis: Solution loaded in {ElapsedMilliseconds}ms", timer.ElapsedMilliseconds);
+	}
 
-			_codeFixService = container.GetExports<ICodeFixService>().FirstOrDefault();
-			_codeRefactoringService = container.GetExports<ICodeRefactoringService>().FirstOrDefault();
-			_signatureHelpService = container.GetExports<SignatureHelpService>().FirstOrDefault()!;
-			// TODO: Write an implementation of ISourceLinkService, as MS's implementation does not appear to be open source
-			_metadataAsSourceFileService = container.GetExports<IMetadataAsSourceFileService>().FirstOrDefault()!;
-			_implementationAssemblyLookupService = container.GetExports<IImplementationAssemblyLookupService>().FirstOrDefault()!;
-			_semanticTokensLegendService = (RemoteSemanticTokensLegendService)container.GetExports<ISemanticTokensLegendService>().FirstOrDefault()!;
-			_semanticTokensLegendService!.OnLspInitialized(new RemoteClientLSPInitializationOptions
-			{
-				ClientCapabilities = new VSInternalClientCapabilities(),
-				TokenModifiers = TokenTypeProvider.ConstructTokenModifiers(),
-				TokenTypes = TokenTypeProvider.ConstructTokenTypes(false)
-			});
-			_documentMappingService = container.GetExports<IDocumentMappingService>().FirstOrDefault();
-
-			_msBuildProjectLoader = new CustomMsBuildProjectLoader(_workspace);
-		}
-
+	private async Task LoadSolutionCoreAsync(string solutionFilePath, CancellationToken cancellationToken)
+	{
 		using (var ___ = SharpIdeOtel.Source.StartActivity("RestoreSolution"))
 		{
 			// MsBuildProjectLoader doesn't do a restore which is absolutely required for resolving PackageReferences, if they have changed. I am guessing it just reads from project.assets.json
-			await _buildService.MsBuildAsync(_sharpIdeSolutionModel.FilePath, BuildType.Restore, BuildStartedFlags.UserFacing, cancellationToken);
+			// It is important to note that a Workspace has no concept of MSBuild, nuget packages etc. It is just told about project references and "metadata" references, which are dlls. This is what MSBuild does - it reads the csproj, and most importantly resolves nuget package references to dlls
+			await _buildService.MsBuildAsync(solutionFilePath, BuildType.Restore, BuildStartedFlags.UserFacing, cancellationToken);
 		}
+
 		using (var ___ = SharpIdeOtel.Source.StartActivity("OpenSolution"))
 		{
 			//_msBuildProjectLoader!.LoadMetadataForReferencedProjects = true;
-			var (solutionInfo, projectFileInfos) = await _msBuildProjectLoader!.LoadSolutionInfoAsync(_sharpIdeSolutionModel.FilePath, cancellationToken: cancellationToken);
+
+			// This call is the expensive part - MSBuild is slow. There doesn't seem to be any incrementalism for solutions.
+			// The best we could do to speed it up is do .LoadProjectInfoAsync for the single project, and somehow munge that into the existing solution
+			var (solutionInfo, projectFileInfos) = await _msBuildProjectLoader!.LoadSolutionInfoAsync(solutionFilePath, cancellationToken: cancellationToken);
 			_projectFileInfoMap = projectFileInfos;
+
 			var analyzerReferencePaths = solutionInfo.Projects
 				.SelectMany(p => p.AnalyzerReferences.OfType<IsolatedAnalyzerFileReference>().Select(a => a.FullPath))
 				.OfType<string>()
 				.Distinct()
 				.ToImmutableArray();
-
 			await _analyzerFileWatcher.StartWatchingFiles(analyzerReferencePaths);
-			_workspace.ClearSolution();
-			var solution = _workspace.AddSolution(solutionInfo);
+
+			// There doesn't appear to be any noticeable difference between ClearSolution + AddSolution vs OnSolutionReloaded
+			//_workspace.OnSolutionReloaded(newSolutionInfo);
+			_workspace!.ClearSolution();
+			_workspace.AddSolution(solutionInfo);
 
 			// If these aren't added, IDiagnosticAnalyzerService will not return compiler analyzer diagnostics
 			// Note that we aren't currently using IDiagnosticAnalyzerService
@@ -161,37 +147,64 @@ public partial class RoslynAnalysis(ILogger<RoslynAnalysis> logger, BuildService
 			//solution = solution.WithAnalyzerReferences(solutionAnalyzerReferences);
 			//_workspace.SetCurrentSolution(solution);
 		}
-		timer.Stop();
-		_logger.LogInformation("RoslynAnalysis: Solution loaded in {ElapsedMilliseconds}ms", timer.ElapsedMilliseconds);
+
 		_solutionLoadedTcs.SetResult();
+	}
 
-		using (var ____ = SharpIdeOtel.Source.StartActivity("LoadAnalyzersAndFixers"))
+	private void CreateWorkspace()
+	{
+		using var __ = SharpIdeOtel.Source.StartActivity();
+
+		var configuration = new ContainerConfiguration()
+			.WithAssemblies(MefHostServices.DefaultAssemblies)
+			.WithAssembly(typeof(RemoteSnapshotManager).Assembly)
+			.WithPart<CSharpDecompilationService2>()
+			.WithPart<DecompileWholeAssemblyToProjectMetadataAsSourceFileProvider>()
+			.WithPart<PythiaStub>();
+
+		// TODO: dispose container at some point?
+		var container = configuration.CreateContainer();
+
+		var host = MefHostServices.Create(container);
+		_workspace = new AdhocWorkspace(host);
+		_workspace.RegisterWorkspaceFailedHandler(o => _logger.LogError("WorkspaceFailedHandler - Workspace failure: {DiagnosticMessage}", o.Diagnostic.Message));
+
+		var snapshotManager = container.GetExports<RemoteSnapshotManager>().FirstOrDefault();
+		_snapshotManager = snapshotManager;
+
+		_codeFixService = container.GetExports<ICodeFixService>().FirstOrDefault();
+		_codeRefactoringService = container.GetExports<ICodeRefactoringService>().FirstOrDefault();
+		_signatureHelpService = container.GetExports<SignatureHelpService>().FirstOrDefault()!;
+		// TODO: Write an implementation of ISourceLinkService, as MS's implementation does not appear to be open source
+		_metadataAsSourceFileService = container.GetExports<IMetadataAsSourceFileService>().FirstOrDefault()!;
+		_implementationAssemblyLookupService = container.GetExports<IImplementationAssemblyLookupService>().FirstOrDefault()!;
+		_semanticTokensLegendService = (RemoteSemanticTokensLegendService)container.GetExports<ISemanticTokensLegendService>().FirstOrDefault()!;
+		_semanticTokensLegendService!.OnLspInitialized(new RemoteClientLSPInitializationOptions
 		{
-			foreach (var assembly in MefHostServices.DefaultAssemblies)
-			{
-				// These could be loaded from the composition via _workspace.CurrentSolution.Services.ExportProvider.GetExports<Lazy<CodeFixProvider, CodeChangeProviderMetadata>>().ToList(),
-				// however we need all the CodeFixProviders/CodeRefactoringProviders immediately on the first code action request, so I would prefer to do it here
-				var fixers = CodeFixProviderLoader.LoadCodeFixProviders([assembly], LanguageNames.CSharp);
-				_codeFixProviders.AddRange(fixers);
-				var refactoringProviders = CodeRefactoringProviderLoader.LoadCodeRefactoringProviders([assembly], LanguageNames.CSharp);
-				_codeRefactoringProviders.AddRange(refactoringProviders);
-			}
-			_codeRefactoringProviders = _codeRefactoringProviders.DistinctBy(s => s.GetType().Name).ToHashSet();
-			_codeFixProviders = _codeFixProviders.DistinctBy(s => s.GetType().Name).ToHashSet();
-		}
+			ClientCapabilities = new VSInternalClientCapabilities(),
+			TokenModifiers = TokenTypeProvider.ConstructTokenModifiers(),
+			TokenTypes = TokenTypeProvider.ConstructTokenTypes(false)
+		});
+		_documentMappingService = container.GetExports<IDocumentMappingService>().FirstOrDefault();
 
-		// // TODO: Distinct on the assemblies first
-		// foreach (var project in solution.Projects)
-		// {
-		// 	var relevantAnalyzerReferences = project.AnalyzerReferences.OfType<AnalyzerFileReference>().ToArray();
-		// 	var assemblies = relevantAnalyzerReferences.Select(a => a.GetAssembly()).ToArray();
-		// 	var language = project.Language;
-		// 	//var analyzers = relevantAnalyzerReferences.SelectMany(a => a.GetAnalyzers(language));
-		// 	var fixers = CodeFixProviderLoader.LoadCodeFixProviders(assemblies, language);
-		// 	_codeFixProviders.AddRange(fixers);
-		// 	var refactoringProviders = CodeRefactoringProviderLoader.LoadCodeRefactoringProviders(assemblies, language);
-		// 	_codeRefactoringProviders.AddRange(refactoringProviders);
-		// }
+		_msBuildProjectLoader = new CustomMsBuildProjectLoader(_workspace);
+	}
+
+	private static void LoadCodeActions()
+	{
+		using var _ = SharpIdeOtel.Source.StartActivity();
+		if (_codeFixProviders.Count is not 0 || _codeRefactoringProviders.Count is not 0) return;
+		foreach (var assembly in MefHostServices.DefaultAssemblies)
+		{
+			// These could be loaded from the composition via _workspace.CurrentSolution.Services.ExportProvider.GetExports<Lazy<CodeFixProvider, CodeChangeProviderMetadata>>().ToList(),
+			// however we need all the CodeFixProviders/CodeRefactoringProviders immediately on the first code action request, so I would prefer to do it here
+			var fixers = CodeFixProviderLoader.LoadCodeFixProviders([assembly], LanguageNames.CSharp);
+			_codeFixProviders.AddRange(fixers);
+			var refactoringProviders = CodeRefactoringProviderLoader.LoadCodeRefactoringProviders([assembly], LanguageNames.CSharp);
+			_codeRefactoringProviders.AddRange(refactoringProviders);
+		}
+		_codeRefactoringProviders = _codeRefactoringProviders.DistinctBy(s => s.GetType().Name).ToHashSet();
+		_codeFixProviders = _codeFixProviders.DistinctBy(s => s.GetType().Name).ToHashSet();
 	}
 
 	/// Callers should call UpdateSolutionDiagnostics after this
@@ -201,24 +214,12 @@ public partial class RoslynAnalysis(ILogger<RoslynAnalysis> logger, BuildService
 		using var _ = SharpIdeOtel.Source.StartActivity($"{nameof(RoslynAnalysis)}.{nameof(ReloadSolution)}");
 		_logger.LogInformation("RoslynAnalysis: Reloading solution");
 		await _solutionLoadedTcs.Task;
+		_solutionLoadedTcs = new TaskCompletionSource();
 		Guard.Against.Null(_workspace, nameof(_workspace));
 		Guard.Against.Null(_msBuildProjectLoader, nameof(_msBuildProjectLoader));
 
-		// It is important to note that a Workspace has no concept of MSBuild, nuget packages etc. It is just told about project references and "metadata" references, which are dlls. This is the what MSBuild does - it reads the csproj, and most importantly resolves nuget package references to dlls
-		await _buildService.MsBuildAsync(_sharpIdeSolutionModel!.FilePath, BuildType.Restore, BuildStartedFlags.UserFacing, cancellationToken);
-		var __ = SharpIdeOtel.Source.StartActivity($"{nameof(RoslynAnalysis)}.MSBuildProjectLoader.LoadSolutionInfoAsync");
-		// This call is the expensive part - MSBuild is slow. There doesn't seem to be any incrementalism for solutions.
-		// The best we could do to speed it up is do .LoadProjectInfoAsync for the single project, and somehow munge that into the existing solution
-		var (newSolutionInfo, projectFileInfos) = await _msBuildProjectLoader.LoadSolutionInfoAsync(_sharpIdeSolutionModel!.FilePath, cancellationToken: cancellationToken);
-		_projectFileInfoMap = projectFileInfos;
-		__?.Dispose();
+		await LoadSolutionCoreAsync(_sharpIdeSolutionModel!.FilePath, cancellationToken);
 
-		var ___ = SharpIdeOtel.Source.StartActivity($"{nameof(RoslynAnalysis)}.Workspace.OnSolutionReloaded");
-		// There doesn't appear to be any noticeable difference between ClearSolution + AddSolution vs OnSolutionReloaded
-		//_workspace.OnSolutionReloaded(newSolutionInfo);
-		_workspace.ClearSolution();
-		_workspace.AddSolution(newSolutionInfo);
-		___?.Dispose();
 		_logger.LogInformation("RoslynAnalysis: Solution reloaded");
 	}
 
@@ -360,7 +361,7 @@ public partial class RoslynAnalysis(ILogger<RoslynAnalysis> logger, BuildService
 
 	public async Task UpdateProjectDiagnosticsForFile(SharpIdeFile sharpIdeFile, CancellationToken cancellationToken = default)
 	{
-		var project = ((IChildSharpIdeNode) sharpIdeFile).GetNearestProjectNode();
+		var project = GetRequiredSharpIdeProjectForSharpIdeFile(sharpIdeFile);
 		Guard.Against.Null(project);
 		await UpdateProjectDiagnostics(project, cancellationToken);
 	}
@@ -376,29 +377,6 @@ public partial class RoslynAnalysis(ILogger<RoslynAnalysis> logger, BuildService
 		var allDiagnostics = compilation.GetDiagnostics(cancellationToken);
 		var diagnostics = allDiagnostics
 			.Where(d => d.Severity is not DiagnosticSeverity.Hidden)
-			.Select(d =>
-			{
-				var mappedFileLinePositionSpan = d.Location.SourceTree!.GetMappedLineSpan(d.Location.SourceSpan);
-				return new SharpIdeDiagnostic(mappedFileLinePositionSpan.Span, d, mappedFileLinePositionSpan.Path);
-			})
-			.ToImmutableArray();
-		return diagnostics;
-	}
-
-	public async Task<ImmutableArray<SharpIdeDiagnostic>> GetProjectDiagnosticsForFile(SharpIdeFile sharpIdeFile, CancellationToken cancellationToken = default)
-	{
-		using var _ = SharpIdeOtel.Source.StartActivity($"{nameof(RoslynAnalysis)}.{nameof(GetProjectDiagnosticsForFile)}");
-		await _solutionLoadedTcs.Task;
-		if (sharpIdeFile.IsRoslynWorkspaceFile is false) return [];
-		var project = GetProjectForSharpIdeFile(sharpIdeFile);
-		var compilation = await project.GetCompilationAsync(cancellationToken);
-		Guard.Against.Null(compilation, nameof(compilation));
-
-		var document = await GetDocumentForSharpIdeFile(sharpIdeFile, cancellationToken);
-
-		var syntaxTree = compilation.SyntaxTrees.Single(s => s.FilePath == document.FilePath);
-		var diagnostics = compilation.GetDiagnostics(cancellationToken)
-			.Where(d => d.Severity is not DiagnosticSeverity.Hidden && d.Location.SourceTree == syntaxTree)
 			.Select(d =>
 			{
 				var mappedFileLinePositionSpan = d.Location.SourceTree!.GetMappedLineSpan(d.Location.SourceSpan);
@@ -466,7 +444,7 @@ public partial class RoslynAnalysis(ILogger<RoslynAnalysis> logger, BuildService
 		return result;
 	}
 
-	private static async Task<Document> GetDocumentForSharpIdeFile(SharpIdeFile fileModel, CancellationToken cancellationToken = default)
+	private async Task<Document> GetDocumentForSharpIdeFile(SharpIdeFile fileModel, CancellationToken cancellationToken = default)
 	{
 		var project = GetProjectForSharpIdeFile(fileModel);
 		var document = fileModel.IsCsharpFile ? project.Documents.SingleOrDefault(s => s.FilePath == fileModel.Path)
@@ -1273,6 +1251,7 @@ public partial class RoslynAnalysis(ILogger<RoslynAnalysis> logger, BuildService
 		Guard.Against.Null(content, nameof(content));
 
 		var sharpIdeProject = GetSharpIdeProjectForSharpIdeFile(fileModel);
+		if (sharpIdeProject is null) return false;
 		var probableProject = GetProjectForSharpIdeProjectModel(sharpIdeProject);
 		// This file probably belongs to this project, but we need to check its path against the globs for the project to make sure
 		var projectFileInfo = _projectFileInfoMap.GetValueOrDefault(probableProject.Id);
@@ -1384,7 +1363,7 @@ public partial class RoslynAnalysis(ILogger<RoslynAnalysis> logger, BuildService
 		var documentId = _workspace!.CurrentSolution.GetDocumentIdsWithFilePath(oldFilePath).Single();
 		_workspace.SetCurrentSolution(oldSolution =>
 		{
-			var newSolution = oldSolution.WithDocumentName(documentId, sharpIdeFile.Name.Value);
+			var newSolution = oldSolution.WithDocumentFilePath(documentId, sharpIdeFile.Path).WithDocumentName(documentId, sharpIdeFile.Name.Value);
 			return newSolution;
 		}, WorkspaceChangeKind.DocumentInfoChanged, documentId: documentId);
 	}
@@ -1398,13 +1377,23 @@ public partial class RoslynAnalysis(ILogger<RoslynAnalysis> logger, BuildService
 		return outputPath;
 	}
 
-	private static SharpIdeProjectModel GetSharpIdeProjectForSharpIdeFile(SharpIdeFile sharpIdeFile)
+	private SharpIdeProjectModel? GetSharpIdeProjectForSharpIdeFile(SharpIdeFile sharpIdeFile)
 	{
-		var sharpIdeProjectModel = ((IChildSharpIdeNode)sharpIdeFile).GetNearestProjectNode()!;
-		return sharpIdeProjectModel;
+		var containingProjectFolder = sharpIdeFile.GetContainingProjectFolder();
+		if (containingProjectFolder is null) return null;
+		var sharpIdeProject = _sharpIdeSolutionModel!.GetProjectForContainingFolderPath(containingProjectFolder);
+		return sharpIdeProject;
+	}
+	private SharpIdeProjectModel GetRequiredSharpIdeProjectForSharpIdeFile(SharpIdeFile sharpIdeFile)
+	{
+		var containingProjectFolder = sharpIdeFile.GetContainingProjectFolder();
+		Guard.Against.Null(containingProjectFolder);
+		var sharpIdeProject = _sharpIdeSolutionModel!.GetProjectForContainingFolderPath(containingProjectFolder);
+		Guard.Against.Null(sharpIdeProject);
+		return sharpIdeProject;
 	}
 
-	private static Project GetProjectForSharpIdeFile(SharpIdeFile sharpIdeFile)
+	private Project GetProjectForSharpIdeFile(SharpIdeFile sharpIdeFile)
 	{
 		if (sharpIdeFile.IsMetadataAsSourceFile)
 		{
@@ -1414,7 +1403,7 @@ public partial class RoslynAnalysis(ILogger<RoslynAnalysis> logger, BuildService
 			var metadataAsSourceProject = document.Project;
 			return metadataAsSourceProject;
 		}
-		var sharpIdeProjectModel = GetSharpIdeProjectForSharpIdeFile(sharpIdeFile);
+		var sharpIdeProjectModel = GetRequiredSharpIdeProjectForSharpIdeFile(sharpIdeFile);
 		var project = GetProjectForSharpIdeProjectModel(sharpIdeProjectModel);
 		return project;
 	}

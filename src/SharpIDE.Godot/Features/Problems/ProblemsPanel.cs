@@ -4,6 +4,7 @@ using Microsoft.CodeAnalysis;
 using ObservableCollections;
 using R3;
 using SharpIDE.Application.Features.Analysis;
+using SharpIDE.Application.Features.SolutionDiscovery;
 using SharpIDE.Application.Features.SolutionDiscovery.VsPersistence;
 using SharpIDE.Godot.Features.Common;
 
@@ -48,13 +49,15 @@ public partial class ProblemsPanel : Control
     public void BindToTree(ObservableHashSet<SharpIdeProjectModel> list)
     {
         var view = list.CreateView(y => new TreeItemContainer());
+        var disposableBuilder = new DisposableBuilder();
         view.ObserveChanged().SubscribeOnThreadPool().ObserveOnThreadPool()
             .SubscribeAwait(async (e, ct) => await (e.Action switch
             {
                 NotifyCollectionChangedAction.Add => CreateProjectTreeItem(_tree, _rootItem, e),
-                NotifyCollectionChangedAction.Remove => FreeTreeItem(e.OldItem.View.Value),
+                NotifyCollectionChangedAction.Remove => this.InvokeAsync(() => FreeTreeItem(e.OldItem.View.Value)),
                 _ => Task.CompletedTask
-            }), configureAwait: false).AddTo(this);
+            }), configureAwait: false).AddTo(ref disposableBuilder);
+        _rootItem.SharpIdeDisposable = disposableBuilder.Build();
     }
 
     private async Task CreateProjectTreeItem(Tree tree, TreeItem parent, ViewChangedEvent<SharpIdeProjectModel, TreeItemContainer> e)
@@ -64,19 +67,26 @@ public partial class ProblemsPanel : Control
             var treeItem = tree.CreateItem(parent);
             treeItem.SetText(0, e.NewItem.Value.Name.Value);
             treeItem.SetIcon(0, CsprojIcon);
+            treeItem.Visible = e.NewItem.Value.Diagnostics.Count is not 0;
             e.NewItem.View.Value = treeItem;
-            
-            Observable.EveryValueChanged(e.NewItem.Value, s => s.Diagnostics.Count).SubscribeOnThreadPool().ObserveOnThreadPool()
-                .SubscribeAwait(async (s, ct) => await this.InvokeAsync(() => treeItem.Visible = s is not 0), configureAwait: false).AddTo(this);
+            var disposableBuilder = new DisposableBuilder();
             
             var projectDiagnosticsView = e.NewItem.Value.Diagnostics.CreateView(y => new TreeItemContainer());
             projectDiagnosticsView.ObserveChanged().SubscribeOnThreadPool().ObserveOnThreadPool()
-                .SubscribeAwait(async (innerEvent, ct) => await (innerEvent.Action switch
+                .SubscribeAwait(async (innerEvent, ct) =>
                 {
-                    NotifyCollectionChangedAction.Add => CreateDiagnosticTreeItem(_tree, treeItem, innerEvent),
-                    NotifyCollectionChangedAction.Remove => FreeTreeItem(innerEvent.OldItem.View.Value),
-                    _ => Task.CompletedTask
-                }), configureAwait: false).AddTo(this);
+                    if (innerEvent.Action is not (NotifyCollectionChangedAction.Add or NotifyCollectionChangedAction.Remove)) return;
+                    await this.InvokeAsync(() =>
+                    {
+                        treeItem.Visible = e.NewItem.Value.Diagnostics.Count is not 0;
+                        switch (innerEvent.Action)
+                        {
+                            case NotifyCollectionChangedAction.Add: CreateDiagnosticTreeItem(_tree, treeItem, innerEvent); break;
+                            case NotifyCollectionChangedAction.Remove: FreeTreeItem(innerEvent.OldItem.View.Value); break;
+                        }
+                    });
+                }, configureAwait: false).AddTo(ref disposableBuilder);
+            treeItem.SharpIdeDisposable = disposableBuilder.Build();
         });
     }
 
@@ -163,28 +173,24 @@ public partial class ProblemsPanel : Control
         _tree.DrawString(font, new Vector2(fileNameX, textYPos), fileName, HorizontalAlignment.Left, -1, fontSize, fileNameColor);
     }
 
-    private async Task CreateDiagnosticTreeItem(Tree tree, TreeItem parent, ViewChangedEvent<SharpIdeDiagnostic, TreeItemContainer> e)
+    [RequiresGodotUiThread]
+    private void CreateDiagnosticTreeItem(Tree tree, TreeItem parent, ViewChangedEvent<SharpIdeDiagnostic, TreeItemContainer> e)
     {
-        await this.InvokeAsync(() =>
-        {
-            var diagItem = tree.CreateItem(parent);
-            diagItem.SetCellMode(0, TreeItem.TreeCellMode.Custom);
-            diagItem.SetCustomAsButton(0, true);
-            diagItem.SetTooltipText(0, e.NewItem.Value.Diagnostic.GetMessage());
-            diagItem.SharpIdeDiagnostic = e.NewItem.Value;
-            // Avoid allocation via Callable.From((TreeItem s, Rect2 x) => CustomDraw(s, x))
-            diagItem.SetCustomDrawCallback(0, _diagnosticCustomDrawCallable!.Value);
-            e.NewItem.View.Value = diagItem;
-        });
+        var diagItem = tree.CreateItem(parent);
+        diagItem.SetCellMode(0, TreeItem.TreeCellMode.Custom);
+        diagItem.SetCustomAsButton(0, true);
+        diagItem.SetTooltipText(0, e.NewItem.Value.Diagnostic.GetMessage());
+        diagItem.SharpIdeDiagnostic = e.NewItem.Value;
+        // Avoid allocation via Callable.From((TreeItem s, Rect2 x) => CustomDraw(s, x))
+        diagItem.SetCustomDrawCallback(0, _diagnosticCustomDrawCallable!.Value);
+        e.NewItem.View.Value = diagItem;
     }
     
-    private async Task FreeTreeItem(TreeItem? treeItem)
+    [RequiresGodotUiThread]
+    private void FreeTreeItem(TreeItem? treeItem)
     {
-        if (treeItem is null) return;
-        await this.InvokeAsync(() =>
-        {
-            treeItem.Free();
-        });
+        treeItem?.SharpIdeDisposable?.Dispose();
+        treeItem?.Free();
     }
     
     private void TreeOnItemActivated()

@@ -7,11 +7,9 @@ using SharpIDE.Application;
 using SharpIDE.Application.Features.Analysis;
 using SharpIDE.Application.Features.Evaluation;
 using SharpIDE.Application.Features.SolutionDiscovery;
-using SharpIDE.Application.Features.SolutionDiscovery.VsPersistence;
 using SharpIDE.Godot.Features.BottomPanel;
 using SharpIDE.Godot.Features.Common;
 using SharpIDE.Godot.Features.Git;
-using SharpIDE.Godot.Features.Problems;
 
 namespace SharpIDE.Godot.Features.SolutionExplorer;
 
@@ -96,6 +94,8 @@ public partial class SolutionExplorerPanel : MarginContainer
 			case (MouseButtonMask.Right, SharpIdeFolder folder): OpenContextMenuFolder(folder, selected); break;
 			case (MouseButtonMask.Left, SharpIdeSolutionFolder): break;
 			case (MouseButtonMask.Right, SharpIdeSolutionFolder slnFolder): OpenContextMenuSlnFolder(slnFolder, selected); break;
+			case (MouseButtonMask.Left, SharpIdeSolutionModel): break;
+			case (MouseButtonMask.Right, SharpIdeSolutionModel solution): OpenContextMenuSolution(solution, selected); break;
 			default: break;
 		}
 	}
@@ -164,7 +164,10 @@ public partial class SolutionExplorerPanel : MarginContainer
 	    var rootItem = _tree.CreateItem();
 	    rootItem.SetText(0, solution.Name);
 	    rootItem.SetIcon(0, SlnIcon);
+	    rootItem.SharpIdeNode = solution;
 	    _rootItem = rootItem;
+	    
+	    var disposableBuilder = new DisposableBuilder();
 
 	    // Observe Projects
 	    var projectsView = solution.Projects.CreateView(y => new TreeItemContainer());
@@ -175,7 +178,7 @@ public partial class SolutionExplorerPanel : MarginContainer
 			    NotifyCollectionChangedAction.Add => this.InvokeAsync(() => e.NewItem.View.Value = CreateProjectTreeItem(_tree, _rootItem, e.NewItem.Value)),
 	            NotifyCollectionChangedAction.Remove => FreeTreeItem(e.OldItem.View.Value),
 	            _ => Task.CompletedTask
-	        }), configureAwait: false).AddToDeferred(this);
+	        }), configureAwait: false).AddTo(ref disposableBuilder);
 
 	    // Observe Solution Folders
 	    var foldersView = solution.SlnFolders.CreateView(y => new TreeItemContainer());
@@ -186,10 +189,11 @@ public partial class SolutionExplorerPanel : MarginContainer
 	            NotifyCollectionChangedAction.Add => this.InvokeAsync(() => e.NewItem.View.Value = CreateSlnFolderTreeItem(_tree, _rootItem, e.NewItem.Value)),
 	            NotifyCollectionChangedAction.Remove => FreeTreeItem(e.OldItem.View.Value),
 	            _ => Task.CompletedTask
-	        }), configureAwait: false).AddToDeferred(this);
+	        }), configureAwait: false).AddTo(ref disposableBuilder);
 	    
 	    rootItem.SetCollapsedRecursive(true);
 	    rootItem.Collapsed = false;
+	    rootItem.SharpIdeDisposable = disposableBuilder.Build();
 	    await this.InvokeAsync(() =>
 	    {
 		    _panelContainer.AddChild(_tree);
@@ -203,6 +207,8 @@ public partial class SolutionExplorerPanel : MarginContainer
         folderItem.SetText(0, slnFolder.Name);
         folderItem.SetIcon(0, SlnFolderIcon);
         folderItem.SharpIdeNode = slnFolder;
+        
+        var disposableBuilder = new DisposableBuilder();
 
         // Observe folder sub-collections
         var subFoldersView = slnFolder.Folders.CreateView(y => new TreeItemContainer());
@@ -214,7 +220,7 @@ public partial class SolutionExplorerPanel : MarginContainer
                 NotifyCollectionChangedAction.Add => this.InvokeAsync(() => innerEvent.NewItem.View.Value = CreateSlnFolderTreeItem(_tree, folderItem, innerEvent.NewItem.Value)),
                 NotifyCollectionChangedAction.Remove => FreeTreeItem(innerEvent.OldItem.View.Value),
                 _ => Task.CompletedTask
-            }), configureAwait: false).AddToDeferred(this);
+            }), configureAwait: false).AddTo(ref disposableBuilder);
 
         var projectsView = slnFolder.Projects.CreateView(y => new TreeItemContainer());
         projectsView.Unfiltered.ToList().ForEach(s => s.View.Value = CreateProjectTreeItem(_tree, folderItem, s.Value));
@@ -224,7 +230,7 @@ public partial class SolutionExplorerPanel : MarginContainer
                 NotifyCollectionChangedAction.Add => this.InvokeAsync(() => innerEvent.NewItem.View.Value = CreateProjectTreeItem(_tree, folderItem, innerEvent.NewItem.Value)),
                 NotifyCollectionChangedAction.Remove => FreeTreeItem(innerEvent.OldItem.View.Value),
                 _ => Task.CompletedTask
-            }), configureAwait: false).AddToDeferred(this);
+            }), configureAwait: false).AddTo(ref disposableBuilder);
 
         var filesView = slnFolder.Files.CreateView(y => new TreeItemContainer());
         filesView.Unfiltered.ToList().ForEach(s => s.View.Value = CreateFileTreeItem(_tree, folderItem, s.Value));
@@ -234,7 +240,8 @@ public partial class SolutionExplorerPanel : MarginContainer
                 NotifyCollectionChangedAction.Add => this.InvokeAsync(() => innerEvent.NewItem.View.Value = CreateFileTreeItem(_tree, folderItem, innerEvent.NewItem.Value, innerEvent.NewStartingIndex)),
                 NotifyCollectionChangedAction.Remove => FreeTreeItem(innerEvent.OldItem.View.Value),
                 _ => Task.CompletedTask
-            }), configureAwait: false).AddToDeferred(this);
+            }), configureAwait: false).AddTo(ref disposableBuilder);
+        folderItem.SharpIdeDisposable = disposableBuilder.Build();
         return folderItem;
 	}
 
@@ -247,6 +254,8 @@ public partial class SolutionExplorerPanel : MarginContainer
 		projectItem.SetIcon(0, icon);
 		if (projectModel.IsLoading is false && projectModel.IsInvalid) projectItem.SetSuffix(0, " ·  load failed");
 		projectItem.SharpIdeNode = projectModel;
+		
+        var disposableBuilder = new DisposableBuilder();
 		
 		projectModel.MsBuildProjectLoadState.SubscribeOnThreadPool().ObserveOnThreadPool().SubscribeAwait(async (loadState, ct) =>
 		{
@@ -264,10 +273,12 @@ public partial class SolutionExplorerPanel : MarginContainer
 				projectItem.SetIcon(0, newIcon);
 				projectItem.SetSuffix(0, suffix);
 			});
-		}, configureAwait: false).AddToDeferred(this);
+		}, configureAwait: false).AddTo(ref disposableBuilder);
 
-		// Observe project folders
-		var foldersView = projectModel.Folders.CreateView(y => new TreeItemContainer());
+		// Observe project folder's subfolders and files
+		var projectFolder = projectModel.Folder;
+
+		var foldersView = projectFolder.Folders.CreateView(y => new TreeItemContainer());
 		foldersView.Unfiltered.ToList().ForEach(s => s.View.Value = CreateFolderTreeItem(_tree, projectItem, s.Value));
 		
 		foldersView.ObserveChanged().SubscribeOnThreadPool().ObserveOnThreadPool()
@@ -277,10 +288,9 @@ public partial class SolutionExplorerPanel : MarginContainer
 				NotifyCollectionChangedAction.Move => MoveTreeItem(_tree, innerEvent.NewItem.View, innerEvent.NewItem.Value, innerEvent.OldStartingIndex, innerEvent.NewStartingIndex),
 				NotifyCollectionChangedAction.Remove => FreeTreeItem(innerEvent.OldItem.View.Value),
 				_ => Task.CompletedTask
-			}), configureAwait: false).AddToDeferred(this);
+			}), configureAwait: false).AddTo(ref disposableBuilder);
 		
-		// Observe project files
-		var filesView = projectModel.Files.CreateView(y => new TreeItemContainer());
+		var filesView = projectFolder.Files.CreateView(y => new TreeItemContainer());
 		filesView.Unfiltered.ToList().ForEach(s => s.View.Value = CreateFileTreeItem(_tree, projectItem, s.Value));
 		filesView.ObserveChanged().SubscribeOnThreadPool().ObserveOnThreadPool()
 			.SubscribeAwait(async (innerEvent, ct) => await (innerEvent.Action switch
@@ -289,7 +299,8 @@ public partial class SolutionExplorerPanel : MarginContainer
 				NotifyCollectionChangedAction.Move => MoveTreeItem(_tree, innerEvent.NewItem.View, innerEvent.NewItem.Value, innerEvent.OldStartingIndex, innerEvent.NewStartingIndex),
 				NotifyCollectionChangedAction.Remove => FreeTreeItem(innerEvent.OldItem.View.Value),
 				_ => Task.CompletedTask
-			}), configureAwait: false).AddToDeferred(this);
+			}), configureAwait: false).AddTo(ref disposableBuilder);
+		projectItem.SharpIdeDisposable = disposableBuilder.Build();
 		return projectItem;
 	}
 
@@ -300,12 +311,12 @@ public partial class SolutionExplorerPanel : MarginContainer
 		folderItem.SetText(0, sharpIdeFolder.Name.Value);
 		folderItem.SetIcon(0, FolderIcon);
 		folderItem.SharpIdeNode = sharpIdeFolder;
-		
-		Observable.EveryValueChanged(sharpIdeFolder, folder => folder.Name.Value)
-			.Skip(1).SubscribeOnThreadPool().ObserveOnThreadPool().SubscribeAwait(async (s, ct) =>
+
+		var disposableBuilder = Disposable.CreateBuilder();
+		sharpIdeFolder.Name.Skip(1).SubscribeOnThreadPool().ObserveOnThreadPool().SubscribeAwait(async (s, ct) =>
 			{
 				await this.InvokeAsync(() => folderItem.SetText(0, s));
-			}, configureAwait: false).AddToDeferred(this);
+			}, configureAwait: false).AddTo(ref disposableBuilder);
 		
 		// Observe subfolders
 		var subFoldersView = sharpIdeFolder.Folders.CreateView(y => new TreeItemContainer());
@@ -318,7 +329,7 @@ public partial class SolutionExplorerPanel : MarginContainer
 				NotifyCollectionChangedAction.Move => MoveTreeItem(_tree, innerEvent.NewItem.View, innerEvent.NewItem.Value, innerEvent.OldStartingIndex, innerEvent.NewStartingIndex),
 				NotifyCollectionChangedAction.Remove => FreeTreeItem(innerEvent.OldItem.View.Value),
 				_ => Task.CompletedTask
-			}), configureAwait: false).AddToDeferred(this);
+			}), configureAwait: false).AddTo(ref disposableBuilder);
 
 		// Observe files
 		var filesView = sharpIdeFolder.Files.CreateView(y => new TreeItemContainer());
@@ -330,7 +341,8 @@ public partial class SolutionExplorerPanel : MarginContainer
 				NotifyCollectionChangedAction.Move => MoveTreeItem(_tree, innerEvent.NewItem.View, innerEvent.NewItem.Value, innerEvent.OldStartingIndex, innerEvent.NewStartingIndex),
 				NotifyCollectionChangedAction.Remove => FreeTreeItem(innerEvent.OldItem.View.Value),
 				_ => Task.CompletedTask
-			}), configureAwait: false).AddToDeferred(this);
+			}), configureAwait: false).AddTo(ref disposableBuilder);
+		folderItem.SharpIdeDisposable = disposableBuilder.Build();
 		return folderItem;
 	}
 
@@ -341,11 +353,13 @@ public partial class SolutionExplorerPanel : MarginContainer
 		// because the newStartingIndex is calculated based on all children, but we are only inserting files here
 		if (newStartingIndex >= 0)
 		{
-			var sharpIdeParent = sharpIdeFile.Parent as IFolderOrProject;
+			var sharpIdeParent = sharpIdeFile.Parent as SharpIdeFolder;
 			Guard.Against.Null(sharpIdeParent, nameof(sharpIdeParent));
 			var folderCount = sharpIdeParent.Folders.Count;
 			newStartingIndex += folderCount;
 		}
+		var disposableBuilder = Disposable.CreateBuilder();
+		
 		var fileItem = tree.CreateItem(parent, newStartingIndex);
 		fileItem.SetText(0, sharpIdeFile.Name.Value);
 		fileItem.SetIconsForFileExtension(sharpIdeFile);
@@ -353,16 +367,14 @@ public partial class SolutionExplorerPanel : MarginContainer
 		else fileItem.ClearCustomColor(0);
 		fileItem.SharpIdeNode = sharpIdeFile;
 		
-		Observable.EveryValueChanged(sharpIdeFile, file => file.Name.Value)
-			.Skip(1).SubscribeOnThreadPool().ObserveOnThreadPool().SubscribeAwait(async (s, ct) =>
+		sharpIdeFile.Name.Skip(1).SubscribeOnThreadPool().ObserveOnThreadPool()
+			.SubscribeAwait(async (newName, ct) => await this.InvokeAsync(() =>
 			{
-				await this.InvokeAsync(() =>
-				{
-					fileItem.SetText(0, s);
-					fileItem.SetIconsForFileExtension(sharpIdeFile);
-				});
-			}, configureAwait: false).AddToDeferred(this);
-		
+				fileItem.SetText(0, newName);
+				fileItem.SetIconsForFileExtension(sharpIdeFile);
+			}), configureAwait: false)
+			.AddTo(ref disposableBuilder);
+		fileItem.SharpIdeDisposable = disposableBuilder.Build();
 		return fileItem;
 	}
 	
@@ -373,7 +385,7 @@ public partial class SolutionExplorerPanel : MarginContainer
 		var isFile = fileOrFolder is SharpIdeFile;
 		if (isFile)
 		{
-			var sharpIdeParent = fileOrFolder.Parent as IFolderOrProject;
+			var sharpIdeParent = fileOrFolder.Parent as SharpIdeFolder;
 			Guard.Against.Null(sharpIdeParent, nameof(sharpIdeParent));
 			var folderCount = sharpIdeParent.Folders.Count;
 			newStartingIndex += folderCount;
@@ -387,6 +399,10 @@ public partial class SolutionExplorerPanel : MarginContainer
 
 	private async Task FreeTreeItem(TreeItem? item)
 	{
-	    await this.InvokeAsync(() => item?.Free());
+	    await this.InvokeAsync(() =>
+	    {
+		    item?.SharpIdeDisposable?.Dispose();
+		    item?.Free();
+	    });
 	}
 }

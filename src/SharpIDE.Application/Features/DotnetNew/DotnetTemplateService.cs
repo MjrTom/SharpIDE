@@ -10,11 +10,14 @@ namespace SharpIDE.Application.Features.DotnetNew;
 public class DotnetTemplateService(ILoggerFactory loggerFactory)
 {
 	private readonly ILoggerFactory _loggerFactory = loggerFactory;
+	public static HashSet<string> MicrosoftTemplateCategories { get; } = new HashSet<string>(["Console", "Library", "Web", "WinForms", "WPF", "Test", "Aspire"], StringComparer.OrdinalIgnoreCase);
+	private CliTemplateEngineHost? _templateEngineHost;
+	private Bootstrapper? _bootstrapper;
 
 	public async Task<Dictionary<string, Dictionary<string, List<ITemplateInfo>>>> GetCategorisedTemplates(CancellationToken cancellationToken = default)
 	{
 		var templates = await GetTemplates(cancellationToken);
-		var categories = new HashSet<string>(["Web", "WinForms", "WPF", "Console", "Library", "Test", "Aspire"], StringComparer.OrdinalIgnoreCase);
+		var categories = MicrosoftTemplateCategories;
 
 		var categorizedTemplates = templates
 			.Where(t =>
@@ -43,9 +46,9 @@ public class DotnetTemplateService(ILoggerFactory loggerFactory)
 
 	public async Task<IReadOnlyList<ITemplateInfo>> GetTemplates(CancellationToken cancellationToken = default)
 	{
-		var templateEngineHost = CliTemplateEngineHost.CreateHost(false, false, null, null, false, LogLevel.Information, _loggerFactory);
-		var bootstrapper = new Bootstrapper(templateEngineHost, false);
-		var templates = await bootstrapper.GetTemplatesAsync(cancellationToken);
+		_templateEngineHost ??= CliTemplateEngineHost.CreateHost(false, false, null, null, false, LogLevel.Information, _loggerFactory);
+		_bootstrapper ??= new Bootstrapper(_templateEngineHost, false);
+		var templates = await _bootstrapper.GetTemplatesAsync(cancellationToken);
 
 		return templates;
 
@@ -61,5 +64,13 @@ public class DotnetTemplateService(ILoggerFactory loggerFactory)
 		// var name = Path.GetFileName(path);
 		// var templateCreator = await bootstrapper.CreateAsync(template, name, path, (Dictionary<string, string?>)[], null, cancellationToken);
 		;
+	}
+
+	/// <summary>
+	/// <paramref name="path"/> must include the project folder, ie the <paramref name="projectName"/> is not appended to it by the Template Engine
+	/// </summary>
+	public async Task ExecuteTemplate(ITemplateInfo template, string projectName, string path, Dictionary<string, string?> parameters, CancellationToken cancellationToken = default)
+	{
+		var templateCreationResult = await _bootstrapper!.CreateAsync(template, projectName, path, parameters, null, cancellationToken);
 	}
 }

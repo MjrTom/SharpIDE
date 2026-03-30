@@ -5,6 +5,7 @@ using SharpIDE.Application.Features.Analysis;
 using SharpIDE.Application.Features.Build;
 using SharpIDE.Application.Features.Events;
 using SharpIDE.Application.Features.FilePersistence;
+using SharpIDE.Application.Features.FileSystem;
 using SharpIDE.Application.Features.FileWatching;
 using SharpIDE.Application.Features.NavigationHistory;
 using SharpIDE.Application.Features.Run;
@@ -48,9 +49,10 @@ public partial class IdeRoot : Control
 	[Inject] private readonly BuildService _buildService = null!;
     [Inject] private readonly IdeOpenTabsFileManager _openTabsFileManager = null!;
     [Inject] private readonly RoslynAnalysis _roslynAnalysis = null!;
-    [Inject] private readonly SharpIdeSolutionModificationService _sharpIdeSolutionModificationService = null!;
+    [Inject] private readonly SharpIdeRootFolderModificationService _rootFolderModificationService = null!;
     [Inject] private readonly SharpIdeSolutionAccessor _sharpIdeSolutionAccessor = null!;
     [Inject] private readonly IdeNavigationHistoryService _navigationHistoryService = null!;
+    [Inject] private readonly VsPersistenceSolutionService _vsPersistenceSolutionService = null!;
     [Inject] private readonly ILogger<IdeRoot> _logger = null!;
 
 	public override void _EnterTree()
@@ -152,11 +154,13 @@ public partial class IdeRoot : Control
 		{
 			GD.Print($"Selected: {path}");
 			var timer = Stopwatch.StartNew();
-			var solutionModel = await VsPersistenceMapper.GetSolutionModel(path); // TODO: Probably refactor into a DI Service
+			var sharpIdeRootFolder = await FileSystemService.GetSharpIdeRootFolderForSolutionAsync(path);
+			var (solutionModel, vsSln, solutionSerializer) = await VsPersistenceSolutionService.ReadSolution(path, sharpIdeRootFolder);
 			timer.Stop();
 			await _nodeReadyTcs.Task;
 			// Do not use injected services until after _nodeReadyTcs - Services aren't injected until _Ready
 			_logger.LogInformation("Solution model fully created in {ElapsedMilliseconds} ms", timer.ElapsedMilliseconds);
+			await _vsPersistenceSolutionService.LoadSolution(path, vsSln, solutionSerializer);
 			_sharpIdeSolutionAccessor.SolutionModel = solutionModel;
 			_sharpIdeSolutionAccessor.SolutionReadyTcs.SetResult();
 			_solutionExplorerPanel.SolutionModel = solutionModel;
@@ -165,9 +169,9 @@ public partial class IdeRoot : Control
 			_searchAllFilesWindow.Solution = solutionModel;
 			_fileExternalChangeHandler.SolutionModel = solutionModel;
 			_fileChangedService.SolutionModel = solutionModel;
-			_sharpIdeSolutionModificationService.SolutionModel = solutionModel;
+			_rootFolderModificationService.RootFolder = sharpIdeRootFolder;
 			_ = Task.GodotRun(_solutionExplorerPanel.BindToSolution);
-			_roslynAnalysis.StartLoadingSolutionInWorkspace(solutionModel);
+			_roslynAnalysis.StartLoadingSolutionInWorkspace(solutionModel, sharpIdeRootFolder);
 			_fileWatcher.StartWatching(solutionModel);
 			
 			var previousTabs = Singletons.AppState.RecentSlns.Single(s => s.FilePath == solutionModel.FilePath).IdeSolutionState.OpenTabs;

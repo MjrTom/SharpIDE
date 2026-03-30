@@ -6,11 +6,13 @@ using SharpIDE.Application.Features.DotnetNew;
 using SharpIDE.Application.Features.Editor;
 using SharpIDE.Application.Features.Evaluation;
 using SharpIDE.Application.Features.FilePersistence;
+using SharpIDE.Application.Features.FileSystem;
 using SharpIDE.Application.Features.FileWatching;
 using SharpIDE.Application.Features.NavigationHistory;
 using SharpIDE.Application.Features.Nuget;
 using SharpIDE.Application.Features.Run;
 using SharpIDE.Application.Features.Search;
+using SharpIDE.Application.Features.SolutionDiscovery.VsPersistence;
 using SharpIDE.Application.Features.Testing;
 
 namespace SharpIDE.Application;
@@ -37,11 +39,13 @@ public static class DependencyInjection
 		services.AddScoped<IdeOpenTabsFileManager>();
 		services.AddScoped<RoslynAnalysis>();
 		services.AddScoped<IdeFileOperationsService>();
-		services.AddScoped<SharpIdeSolutionModificationService>();
+		services.AddScoped<SharpIdeRootFolderModificationService>();
 		services.AddScoped<AnalyzerFileWatcher>();
 		services.AddScoped<EditorCaretPositionService>();
 		services.AddScoped<SharpIdeMetadataAsSourceService>();
 		services.AddScoped<DotnetTemplateService>();
+		services.AddScoped<VsPersistenceSolutionService>();
+		services.AddScoped<FileSystemService>();
 		services.AddLogging();
 		return services;
 	}
