@@ -177,7 +177,7 @@ public partial class SolutionExplorerPanel : MarginContainer
 	    projectsView.ObserveChanged().SubscribeOnThreadPool().ObserveOnThreadPool()
 	        .SubscribeAwait(async (e, ct) => await (e.Action switch
 	        {
-			    NotifyCollectionChangedAction.Add => this.InvokeAsync(() => e.NewItem.View.Value = CreateProjectTreeItem(_tree, _rootItem, e.NewItem.Value)),
+			    NotifyCollectionChangedAction.Add => this.InvokeAsync(() => e.NewItem.View.Value = CreateProjectTreeItem(_tree, _rootItem, e.NewItem.Value, e.NewStartingIndex)),
 	            NotifyCollectionChangedAction.Remove => FreeTreeItem(e.OldItem.View.Value),
 	            _ => Task.CompletedTask
 	        }), configureAwait: false).AddTo(ref disposableBuilder);
@@ -229,7 +229,7 @@ public partial class SolutionExplorerPanel : MarginContainer
         projectsView.ObserveChanged().SubscribeOnThreadPool().ObserveOnThreadPool()
             .SubscribeAwait(async (innerEvent, ct) => await (innerEvent.Action switch
             {
-                NotifyCollectionChangedAction.Add => this.InvokeAsync(() => innerEvent.NewItem.View.Value = CreateProjectTreeItem(_tree, folderItem, innerEvent.NewItem.Value)),
+                NotifyCollectionChangedAction.Add => this.InvokeAsync(() => innerEvent.NewItem.View.Value = CreateProjectTreeItem(_tree, folderItem, innerEvent.NewItem.Value, innerEvent.NewStartingIndex)),
                 NotifyCollectionChangedAction.Remove => FreeTreeItem(innerEvent.OldItem.View.Value),
                 _ => Task.CompletedTask
             }), configureAwait: false).AddTo(ref disposableBuilder);
@@ -248,9 +248,23 @@ public partial class SolutionExplorerPanel : MarginContainer
 	}
 
 	[RequiresGodotUiThread]
-	private TreeItem CreateProjectTreeItem(Tree tree, TreeItem parent, SharpIdeProjectModel projectModel)
+	private TreeItem CreateProjectTreeItem(Tree tree, TreeItem parent, SharpIdeProjectModel projectModel, int newStartingIndex = -1)
 	{
-		var projectItem = tree.CreateItem(parent);
+		// We need to offset the starting index by the number of solution folders in the parent
+		// because the newStartingIndex is calculated based on all children, but we are only inserting projects here
+		if (newStartingIndex >= 0)
+		{
+			var siblingSlnFolders = parent.SharpIdeNode switch
+			{
+				SharpIdeSolutionModel s => s.SlnFolders,
+				SharpIdeSolutionFolder s => s.Folders,
+				_ => throw new InvalidOperationException("Project parent must be either solution or solution folder")
+			};
+			var folderCount = siblingSlnFolders.Count;
+			newStartingIndex += folderCount;
+		}
+		var projectItem = tree.CreateItem(parent, newStartingIndex);
+		projectItem.Collapsed = true;
 		projectItem.SetText(0, projectModel.Name.Value);
 		var icon = projectModel.IsLoading ? LoadingProjectIcon : projectModel.IsInvalid ? UnloadedProjectIcon : CsprojIcon;
 		projectItem.SetIcon(0, icon);
