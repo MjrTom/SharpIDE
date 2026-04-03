@@ -44,6 +44,11 @@ public class SharpIdeProjectModel : ISharpIdeNode, IExpandableSharpIdeNode, IChi
 	{
 		return await Task.Run(async () =>
 		{
+			if (Folder is null)
+			{
+				MsBuildProjectLoadState.Value = Evaluation.MsBuildProjectLoadState.Missing;
+				return null!;
+			}
 			var result = await ProjectEvaluation.LoadOrReloadProject(FilePath);
 			MsBuildProjectLoadState.Value = result.LoadState;
 			Diagnostics.RemoveRange(Diagnostics.set); // Clear regardless
@@ -60,7 +65,7 @@ public class SharpIdeProjectModel : ISharpIdeNode, IExpandableSharpIdeNode, IChi
 
 	public bool IsLoading => MsBuildProjectLoadState.Value is Evaluation.MsBuildProjectLoadState.Loading;
 	public bool IsLoaded => MsBuildProjectLoadState.Value is Evaluation.MsBuildProjectLoadState.Loaded;
-	public bool IsInvalid => MsBuildProjectLoadState.Value is Evaluation.MsBuildProjectLoadState.Invalid;
+	public bool IsInvalid => MsBuildProjectLoadState.Value is Evaluation.MsBuildProjectLoadState.Invalid or Evaluation.MsBuildProjectLoadState.Missing;
 	public bool IsRunnable => MsBuildEvaluationProject.GetPropertyValue("OutputType") is "Exe" or "WinExe" || IsBlazorProject || IsGodotProject;
 	public bool IsBlazorProject => MsBuildEvaluationProject.Xml.Sdk is "Microsoft.NET.Sdk.BlazorWebAssembly";
 	public bool IsGodotProject => MsBuildEvaluationProject.Xml.Sdk.StartsWith("Godot.NET.Sdk");

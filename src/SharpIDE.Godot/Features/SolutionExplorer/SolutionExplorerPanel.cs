@@ -266,6 +266,7 @@ public partial class SolutionExplorerPanel : MarginContainer
 				MsBuildProjectLoadState.Loading => LoadingProjectIcon,
 				MsBuildProjectLoadState.Loaded => CsprojIcon,
 				MsBuildProjectLoadState.Invalid => UnloadedProjectIcon,
+				MsBuildProjectLoadState.Missing => UnloadedProjectIcon,
 				MsBuildProjectLoadState.Unloaded => UnloadedProjectIcon,
 				_ => throw new ArgumentOutOfRangeException(nameof(loadState), loadState, null)
 			};
@@ -280,28 +281,32 @@ public partial class SolutionExplorerPanel : MarginContainer
 		// Observe project folder's subfolders and files
 		var projectFolder = projectModel.Folder;
 
-		var foldersView = projectFolder.Folders.CreateView(y => new TreeItemContainer());
-		foldersView.Unfiltered.ToList().ForEach(s => s.View.Value = CreateFolderTreeItem(_tree, projectItem, s.Value));
+		if (projectFolder is not null)
+		{
+			var foldersView = projectFolder.Folders.CreateView(y => new TreeItemContainer());
+			foldersView.Unfiltered.ToList().ForEach(s => s.View.Value = CreateFolderTreeItem(_tree, projectItem, s.Value));
 		
-		foldersView.ObserveChanged().SubscribeOnThreadPool().ObserveOnThreadPool()
-			.SubscribeAwait(async (innerEvent, ct) => await (innerEvent.Action switch
-			{
-				NotifyCollectionChangedAction.Add => this.InvokeAsync(() => innerEvent.NewItem.View.Value = CreateFolderTreeItem(_tree, projectItem, innerEvent.NewItem.Value, innerEvent.NewStartingIndex)),
-				NotifyCollectionChangedAction.Move => MoveTreeItem(_tree, innerEvent.NewItem.View, innerEvent.NewItem.Value, innerEvent.OldStartingIndex, innerEvent.NewStartingIndex),
-				NotifyCollectionChangedAction.Remove => FreeTreeItem(innerEvent.OldItem.View.Value),
-				_ => Task.CompletedTask
-			}), configureAwait: false).AddTo(ref disposableBuilder);
+			foldersView.ObserveChanged().SubscribeOnThreadPool().ObserveOnThreadPool()
+				.SubscribeAwait(async (innerEvent, ct) => await (innerEvent.Action switch
+				{
+					NotifyCollectionChangedAction.Add => this.InvokeAsync(() => innerEvent.NewItem.View.Value = CreateFolderTreeItem(_tree, projectItem, innerEvent.NewItem.Value, innerEvent.NewStartingIndex)),
+					NotifyCollectionChangedAction.Move => MoveTreeItem(_tree, innerEvent.NewItem.View, innerEvent.NewItem.Value, innerEvent.OldStartingIndex, innerEvent.NewStartingIndex),
+					NotifyCollectionChangedAction.Remove => FreeTreeItem(innerEvent.OldItem.View.Value),
+					_ => Task.CompletedTask
+				}), configureAwait: false).AddTo(ref disposableBuilder);
 		
-		var filesView = projectFolder.Files.CreateView(y => new TreeItemContainer());
-		filesView.Unfiltered.ToList().ForEach(s => s.View.Value = CreateFileTreeItem(_tree, projectItem, s.Value));
-		filesView.ObserveChanged().SubscribeOnThreadPool().ObserveOnThreadPool()
-			.SubscribeAwait(async (innerEvent, ct) => await (innerEvent.Action switch
-			{
-				NotifyCollectionChangedAction.Add => this.InvokeAsync(() => innerEvent.NewItem.View.Value = CreateFileTreeItem(_tree, projectItem, innerEvent.NewItem.Value, innerEvent.NewStartingIndex)),
-				NotifyCollectionChangedAction.Move => MoveTreeItem(_tree, innerEvent.NewItem.View, innerEvent.NewItem.Value, innerEvent.OldStartingIndex, innerEvent.NewStartingIndex),
-				NotifyCollectionChangedAction.Remove => FreeTreeItem(innerEvent.OldItem.View.Value),
-				_ => Task.CompletedTask
-			}), configureAwait: false).AddTo(ref disposableBuilder);
+			var filesView = projectFolder.Files.CreateView(y => new TreeItemContainer());
+			filesView.Unfiltered.ToList().ForEach(s => s.View.Value = CreateFileTreeItem(_tree, projectItem, s.Value));
+			filesView.ObserveChanged().SubscribeOnThreadPool().ObserveOnThreadPool()
+				.SubscribeAwait(async (innerEvent, ct) => await (innerEvent.Action switch
+				{
+					NotifyCollectionChangedAction.Add => this.InvokeAsync(() => innerEvent.NewItem.View.Value = CreateFileTreeItem(_tree, projectItem, innerEvent.NewItem.Value, innerEvent.NewStartingIndex)),
+					NotifyCollectionChangedAction.Move => MoveTreeItem(_tree, innerEvent.NewItem.View, innerEvent.NewItem.Value, innerEvent.OldStartingIndex, innerEvent.NewStartingIndex),
+					NotifyCollectionChangedAction.Remove => FreeTreeItem(innerEvent.OldItem.View.Value),
+					_ => Task.CompletedTask
+				}), configureAwait: false).AddTo(ref disposableBuilder);
+		}
+		
 		projectItem.SharpIdeDisposable = disposableBuilder.Build();
 		return projectItem;
 	}

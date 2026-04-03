@@ -17,7 +17,8 @@ public enum MsBuildProjectLoadState
 	Loading = 1,
 	Loaded,
 	Unloaded,
-	Invalid
+	Invalid,
+	Missing
 }
 public sealed record MsBuildProjectLoadResult
 {
