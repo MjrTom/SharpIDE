@@ -787,6 +787,7 @@ public partial class RoslynAnalysis(ILogger<RoslynAnalysis> logger, BuildService
 	public async Task<bool> ShouldTriggerCompletionAsync(SharpIdeFile file, string documentText, LinePosition linePosition, CompletionTrigger completionTrigger, CancellationToken cancellationToken = default)
 	{
 		await _solutionLoadedTcs.Task;
+		if (file.IsRoslynWorkspaceFile is false) return false;
 		var document = await GetDocumentForSharpIdeFile(file, cancellationToken);
 		var completionService = CompletionService.GetService(document);
 		if (completionService is null) throw new InvalidOperationException("Completion service is not available for the document.");
