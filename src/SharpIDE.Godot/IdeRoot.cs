@@ -160,7 +160,7 @@ public partial class IdeRoot : Control
 			await _nodeReadyTcs.Task;
 			// Do not use injected services until after _nodeReadyTcs - Services aren't injected until _Ready
 			_logger.LogInformation("Solution model fully created in {ElapsedMilliseconds} ms", timer.ElapsedMilliseconds);
-			await _sharpIdeSolutionService.LoadSolution(path, vsSln, solutionSerializer);
+			await _sharpIdeSolutionService.LoadSolution(solutionModel, path, vsSln, solutionSerializer);
 			_sharpIdeSolutionAccessor.SolutionModel = solutionModel;
 			_sharpIdeSolutionAccessor.SolutionReadyTcs.SetResult();
 			_solutionExplorerPanel.SolutionModel = solutionModel;

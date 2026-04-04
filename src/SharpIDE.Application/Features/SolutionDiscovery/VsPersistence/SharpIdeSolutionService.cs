@@ -9,16 +9,27 @@ namespace SharpIDE.Application.Features.SolutionDiscovery.VsPersistence;
 
 public class SharpIdeSolutionService
 {
+	private SharpIdeSolutionModel? _sharpIdeSolutionModel;
 	private SolutionModel? _vsSolution;
 	private ISolutionSerializer? _solutionSerializer;
 	private string? _solutionFilePath;
 
-	public async Task LoadSolution(string solutionFilePath, SolutionModel vsSln, ISolutionSerializer slnSerializer, CancellationToken cancellationToken = default)
+	public async Task LoadSolution(SharpIdeSolutionModel sharpIdeSolutionModel, string solutionFilePath, SolutionModel vsSln, ISolutionSerializer slnSerializer, CancellationToken cancellationToken = default)
 	{
 		_vsSolution = vsSln;
 		_solutionSerializer = slnSerializer;
 		_solutionFilePath = solutionFilePath;
+		_sharpIdeSolutionModel = sharpIdeSolutionModel;
 	}
+
+	public async Task ReloadSolution(CancellationToken cancellationToken = default)
+	{
+		Guard.Against.Null(_solutionFilePath);
+		var (newSharpIdeSolutionModel, solutionModel, _) = await ReadSolution(_solutionFilePath, _sharpIdeSolutionModel!.RootFolder, cancellationToken);
+		_vsSolution = solutionModel;
+		_sharpIdeSolutionModel!.UpdateFromNewSolution(newSharpIdeSolutionModel);
+	}
+
 	// Weird separation between ReadSolution and LoadSolution is so we can call the static ReadSolution in IdeRoot before all the UI Nodes are ready and DI services injected
 	public static async Task<(SharpIdeSolutionModel, SolutionModel, ISolutionSerializer)> ReadSolution(string solutionFilePath, SharpIdeRootFolder sharpIdeRootFolder, CancellationToken cancellationToken = default)
 	{
