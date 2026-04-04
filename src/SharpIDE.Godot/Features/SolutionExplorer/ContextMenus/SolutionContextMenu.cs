@@ -1,5 +1,7 @@
 ﻿using Godot;
+using SharpIDE.Application.Features.Analysis;
 using SharpIDE.Application.Features.SolutionDiscovery;
+using SharpIDE.Application.Features.SolutionDiscovery.VsPersistence;
 
 namespace SharpIDE.Godot.Features.SolutionExplorer;
 
@@ -16,6 +18,8 @@ file enum SolutionAddSubmenuOptions
 
 public partial class SolutionExplorerPanel
 {
+    [Inject] private readonly SharpIdeSolutionService _sharpIdeSolutionService = null!;
+    
     private void OpenContextMenuSolution(SharpIdeSolutionModel solution, TreeItem solutionTreeItem)
     {
         var menu = new PopupMenu();
@@ -27,10 +31,19 @@ public partial class SolutionExplorerPanel
         createNewSubmenu.AddItem("New Solution Folder", (int)SolutionAddSubmenuOptions.SolutionFolder);
         createNewSubmenu.IdPressed += id => OnSolutionAddSubmenuPressed(id, solution);
         
+        menu.AddItem("Reload Solution", (int)SolutionContextMenuOptions.ReloadSolution);
+        
         menu.PopupHide += () => menu.QueueFree();
         menu.IdPressed += id =>
         {
             var actionId = (SolutionContextMenuOptions)id;
+            if (actionId == SolutionContextMenuOptions.ReloadSolution)
+            {
+                _ = Task.GodotRun(async () =>
+                {
+                    await _sharpIdeSolutionService.ReloadSolution();
+                });
+            }
         };
 			
         var globalMousePosition = GetGlobalMousePosition();
