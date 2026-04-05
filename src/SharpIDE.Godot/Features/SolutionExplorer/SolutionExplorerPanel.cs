@@ -88,8 +88,10 @@ public partial class SolutionExplorerPanel : MarginContainer
 		{
 			case (MouseButtonMask.Left, SharpIdeFile file): GodotGlobalEvents.Instance.FileSelected.InvokeParallelFireAndForget(file, null); break;
 			case (MouseButtonMask.Right, SharpIdeFile file): OpenContextMenuFile(file); break;
+			case (MouseButtonMask.Left, SharpIdeSolutionFile { File: not null } slnFile): GodotGlobalEvents.Instance.FileSelected.InvokeParallelFireAndForget(slnFile.File, null); break;
+			case (MouseButtonMask.Right, SharpIdeSolutionFile { File: not null } slnFile): OpenContextMenuFile(slnFile.File); break;
 			case (MouseButtonMask.Left, SharpIdeProjectModel { IsInvalid: true }): GodotGlobalEvents.Instance.BottomPanelTabExternallySelected.InvokeParallelFireAndForget(BottomPanelType.Problems); break;
-			case (MouseButtonMask.Right, SharpIdeProjectModel project): OpenContextMenuProject(project); break;
+			case (MouseButtonMask.Right, SharpIdeProjectModel { Folder: not null } project): OpenContextMenuProject(project); break;
 			case (MouseButtonMask.Left, SharpIdeFolder): break;
 			case (MouseButtonMask.Right, SharpIdeFolder folder): OpenContextMenuFolder(folder, selected); break;
 			case (MouseButtonMask.Left, SharpIdeSolutionFolder): break;
@@ -175,7 +177,7 @@ public partial class SolutionExplorerPanel : MarginContainer
 	    projectsView.ObserveChanged().SubscribeOnThreadPool().ObserveOnThreadPool()
 	        .SubscribeAwait(async (e, ct) => await (e.Action switch
 	        {
-			    NotifyCollectionChangedAction.Add => this.InvokeAsync(() => e.NewItem.View.Value = CreateProjectTreeItem(_tree, _rootItem, e.NewItem.Value)),
+			    NotifyCollectionChangedAction.Add => this.InvokeAsync(() => e.NewItem.View.Value = CreateProjectTreeItem(_tree, _rootItem, e.NewItem.Value, e.NewStartingIndex)),
 	            NotifyCollectionChangedAction.Remove => FreeTreeItem(e.OldItem.View.Value),
 	            _ => Task.CompletedTask
 	        }), configureAwait: false).AddTo(ref disposableBuilder);
@@ -227,17 +229,17 @@ public partial class SolutionExplorerPanel : MarginContainer
         projectsView.ObserveChanged().SubscribeOnThreadPool().ObserveOnThreadPool()
             .SubscribeAwait(async (innerEvent, ct) => await (innerEvent.Action switch
             {
-                NotifyCollectionChangedAction.Add => this.InvokeAsync(() => innerEvent.NewItem.View.Value = CreateProjectTreeItem(_tree, folderItem, innerEvent.NewItem.Value)),
+                NotifyCollectionChangedAction.Add => this.InvokeAsync(() => innerEvent.NewItem.View.Value = CreateProjectTreeItem(_tree, folderItem, innerEvent.NewItem.Value, innerEvent.NewStartingIndex)),
                 NotifyCollectionChangedAction.Remove => FreeTreeItem(innerEvent.OldItem.View.Value),
                 _ => Task.CompletedTask
             }), configureAwait: false).AddTo(ref disposableBuilder);
 
         var filesView = slnFolder.Files.CreateView(y => new TreeItemContainer());
-        filesView.Unfiltered.ToList().ForEach(s => s.View.Value = CreateFileTreeItem(_tree, folderItem, s.Value));
+        filesView.Unfiltered.ToList().ForEach(s => s.View.Value = CreateSolutionFileTreeItem(_tree, folderItem, s.Value));
         filesView.ObserveChanged().SubscribeOnThreadPool().ObserveOnThreadPool()
             .SubscribeAwait(async (innerEvent, ct) => await (innerEvent.Action switch
             {
-                NotifyCollectionChangedAction.Add => this.InvokeAsync(() => innerEvent.NewItem.View.Value = CreateFileTreeItem(_tree, folderItem, innerEvent.NewItem.Value, innerEvent.NewStartingIndex)),
+                NotifyCollectionChangedAction.Add => this.InvokeAsync(() => innerEvent.NewItem.View.Value = CreateSolutionFileTreeItem(_tree, folderItem, innerEvent.NewItem.Value, innerEvent.NewStartingIndex)),
                 NotifyCollectionChangedAction.Remove => FreeTreeItem(innerEvent.OldItem.View.Value),
                 _ => Task.CompletedTask
             }), configureAwait: false).AddTo(ref disposableBuilder);
@@ -246,9 +248,23 @@ public partial class SolutionExplorerPanel : MarginContainer
 	}
 
 	[RequiresGodotUiThread]
-	private TreeItem CreateProjectTreeItem(Tree tree, TreeItem parent, SharpIdeProjectModel projectModel)
+	private TreeItem CreateProjectTreeItem(Tree tree, TreeItem parent, SharpIdeProjectModel projectModel, int newStartingIndex = -1)
 	{
-		var projectItem = tree.CreateItem(parent);
+		// We need to offset the starting index by the number of solution folders in the parent
+		// because the newStartingIndex is calculated based on all children, but we are only inserting projects here
+		if (newStartingIndex >= 0)
+		{
+			var siblingSlnFolders = parent.SharpIdeNode switch
+			{
+				SharpIdeSolutionModel s => s.SlnFolders,
+				SharpIdeSolutionFolder s => s.Folders,
+				_ => throw new InvalidOperationException("Project parent must be either solution or solution folder")
+			};
+			var folderCount = siblingSlnFolders.Count;
+			newStartingIndex += folderCount;
+		}
+		var projectItem = tree.CreateItem(parent, newStartingIndex);
+		projectItem.Collapsed = true;
 		projectItem.SetText(0, projectModel.Name.Value);
 		var icon = projectModel.IsLoading ? LoadingProjectIcon : projectModel.IsInvalid ? UnloadedProjectIcon : CsprojIcon;
 		projectItem.SetIcon(0, icon);
@@ -264,6 +280,7 @@ public partial class SolutionExplorerPanel : MarginContainer
 				MsBuildProjectLoadState.Loading => LoadingProjectIcon,
 				MsBuildProjectLoadState.Loaded => CsprojIcon,
 				MsBuildProjectLoadState.Invalid => UnloadedProjectIcon,
+				MsBuildProjectLoadState.Missing => UnloadedProjectIcon,
 				MsBuildProjectLoadState.Unloaded => UnloadedProjectIcon,
 				_ => throw new ArgumentOutOfRangeException(nameof(loadState), loadState, null)
 			};
@@ -278,28 +295,32 @@ public partial class SolutionExplorerPanel : MarginContainer
 		// Observe project folder's subfolders and files
 		var projectFolder = projectModel.Folder;
 
-		var foldersView = projectFolder.Folders.CreateView(y => new TreeItemContainer());
-		foldersView.Unfiltered.ToList().ForEach(s => s.View.Value = CreateFolderTreeItem(_tree, projectItem, s.Value));
+		if (projectFolder is not null)
+		{
+			var foldersView = projectFolder.Folders.CreateView(y => new TreeItemContainer());
+			foldersView.Unfiltered.ToList().ForEach(s => s.View.Value = CreateFolderTreeItem(_tree, projectItem, s.Value));
 		
-		foldersView.ObserveChanged().SubscribeOnThreadPool().ObserveOnThreadPool()
-			.SubscribeAwait(async (innerEvent, ct) => await (innerEvent.Action switch
-			{
-				NotifyCollectionChangedAction.Add => this.InvokeAsync(() => innerEvent.NewItem.View.Value = CreateFolderTreeItem(_tree, projectItem, innerEvent.NewItem.Value, innerEvent.NewStartingIndex)),
-				NotifyCollectionChangedAction.Move => MoveTreeItem(_tree, innerEvent.NewItem.View, innerEvent.NewItem.Value, innerEvent.OldStartingIndex, innerEvent.NewStartingIndex),
-				NotifyCollectionChangedAction.Remove => FreeTreeItem(innerEvent.OldItem.View.Value),
-				_ => Task.CompletedTask
-			}), configureAwait: false).AddTo(ref disposableBuilder);
+			foldersView.ObserveChanged().SubscribeOnThreadPool().ObserveOnThreadPool()
+				.SubscribeAwait(async (innerEvent, ct) => await (innerEvent.Action switch
+				{
+					NotifyCollectionChangedAction.Add => this.InvokeAsync(() => innerEvent.NewItem.View.Value = CreateFolderTreeItem(_tree, projectItem, innerEvent.NewItem.Value, innerEvent.NewStartingIndex)),
+					NotifyCollectionChangedAction.Move => MoveTreeItem(_tree, innerEvent.NewItem.View, innerEvent.NewItem.Value, innerEvent.OldStartingIndex, innerEvent.NewStartingIndex),
+					NotifyCollectionChangedAction.Remove => FreeTreeItem(innerEvent.OldItem.View.Value),
+					_ => Task.CompletedTask
+				}), configureAwait: false).AddTo(ref disposableBuilder);
 		
-		var filesView = projectFolder.Files.CreateView(y => new TreeItemContainer());
-		filesView.Unfiltered.ToList().ForEach(s => s.View.Value = CreateFileTreeItem(_tree, projectItem, s.Value));
-		filesView.ObserveChanged().SubscribeOnThreadPool().ObserveOnThreadPool()
-			.SubscribeAwait(async (innerEvent, ct) => await (innerEvent.Action switch
-			{
-				NotifyCollectionChangedAction.Add => this.InvokeAsync(() => innerEvent.NewItem.View.Value = CreateFileTreeItem(_tree, projectItem, innerEvent.NewItem.Value, innerEvent.NewStartingIndex)),
-				NotifyCollectionChangedAction.Move => MoveTreeItem(_tree, innerEvent.NewItem.View, innerEvent.NewItem.Value, innerEvent.OldStartingIndex, innerEvent.NewStartingIndex),
-				NotifyCollectionChangedAction.Remove => FreeTreeItem(innerEvent.OldItem.View.Value),
-				_ => Task.CompletedTask
-			}), configureAwait: false).AddTo(ref disposableBuilder);
+			var filesView = projectFolder.Files.CreateView(y => new TreeItemContainer());
+			filesView.Unfiltered.ToList().ForEach(s => s.View.Value = CreateFileTreeItem(_tree, projectItem, s.Value));
+			filesView.ObserveChanged().SubscribeOnThreadPool().ObserveOnThreadPool()
+				.SubscribeAwait(async (innerEvent, ct) => await (innerEvent.Action switch
+				{
+					NotifyCollectionChangedAction.Add => this.InvokeAsync(() => innerEvent.NewItem.View.Value = CreateFileTreeItem(_tree, projectItem, innerEvent.NewItem.Value, innerEvent.NewStartingIndex)),
+					NotifyCollectionChangedAction.Move => MoveTreeItem(_tree, innerEvent.NewItem.View, innerEvent.NewItem.Value, innerEvent.OldStartingIndex, innerEvent.NewStartingIndex),
+					NotifyCollectionChangedAction.Remove => FreeTreeItem(innerEvent.OldItem.View.Value),
+					_ => Task.CompletedTask
+				}), configureAwait: false).AddTo(ref disposableBuilder);
+		}
+		
 		projectItem.SharpIdeDisposable = disposableBuilder.Build();
 		return projectItem;
 	}
@@ -344,6 +365,38 @@ public partial class SolutionExplorerPanel : MarginContainer
 			}), configureAwait: false).AddTo(ref disposableBuilder);
 		folderItem.SharpIdeDisposable = disposableBuilder.Build();
 		return folderItem;
+	}
+
+	[RequiresGodotUiThread]
+	private TreeItem CreateSolutionFileTreeItem(Tree tree, TreeItem parent, SharpIdeSolutionFile sharpIdeSolutionFile, int newStartingIndex = -1)
+	{
+		// We need to offset the starting index by the number of non-file items (folders/projects) in the parent
+		// because the newStartingIndex is calculated based on all children, but we are only inserting files here
+		if (newStartingIndex >= 0)
+		{
+			var sharpIdeParent = sharpIdeSolutionFile.Parent as SharpIdeSolutionFolder;
+			Guard.Against.Null(sharpIdeParent, nameof(sharpIdeParent));
+			var folderCount = sharpIdeParent.Folders.Count;
+			var projectsCount = sharpIdeParent.Projects.Count;
+			newStartingIndex += folderCount + projectsCount;
+		}
+		var fileItem = tree.CreateItem(parent, newStartingIndex);
+		fileItem.SetText(0, sharpIdeSolutionFile.Name);
+		if (sharpIdeSolutionFile.File is {} file)
+		{
+			fileItem.SetIconsForFileExtension(file);
+			if (GitColours.GetColorForGitFileStatus(file.GitStatus) is { } notnullColor) fileItem.SetCustomColor(0, notnullColor);
+			else fileItem.ClearCustomColor(0);
+		}
+		else
+		{
+			fileItem.SetWarningIcon();
+			fileItem.ClearCustomColor(0);
+		}
+		
+		fileItem.SharpIdeNode = sharpIdeSolutionFile;
+		
+		return fileItem;
 	}
 
 	[RequiresGodotUiThread]
