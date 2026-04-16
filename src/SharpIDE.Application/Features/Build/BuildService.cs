@@ -50,6 +50,7 @@ public class BuildService(ILogger<BuildService> logger)
 				CreateNoWindow = true,
 				WindowStyle = ProcessWindowStyle.Hidden
 			};
+			startupInfo.Environment["DOTNET_ROLL_FORWARD_TO_PRERELEASE"] = "1";
 			var process = Process.Start(startupInfo);
 			if (process is null) throw new InvalidOperationException("Failed to start SharpIDE.MsBuildHost");
 			var handler = new LengthHeaderMessageHandler(process.StandardInput.BaseStream, process.StandardOutput.BaseStream, new NerdbankMessagePackFormatter { TypeShapeProvider = TypeShapeProvider_SharpIDE_MsBuildHost_Contracts.Default });
