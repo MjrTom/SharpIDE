@@ -813,7 +813,6 @@ public partial class RoslynAnalysis(ILogger<RoslynAnalysis> logger, BuildService
 	private static ImmutableArray<SharpIdeCompletionItem> FilterCompletionList(CompletionList completionList, TextSpan filterSpan, CompletionTrigger completionTrigger, CompletionFilterReason filterReason, SourceText sourceText)
     {
         var filterText = sourceText.GetSubText(filterSpan).ToString();
-		Console.WriteLine($"Filter text: '{filterText}'");
 
         // Use pattern matching to determine which items are most relevant out of the calculated items.
         using var _ = ArrayBuilder<MatchResult>.GetInstance(out var matchResultsBuilder);
