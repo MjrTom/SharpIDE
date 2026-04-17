@@ -1,11 +1,9 @@
 using System.Collections.Immutable;
-using Ardalis.GuardClauses;
 using Microsoft.Extensions.Logging;
 using NeoSmart.AsyncLock;
 using SharpIDE.Application.Features.Events;
 using SharpIDE.Application.Features.FileSystem;
 using SharpIDE.Application.Features.SolutionDiscovery;
-using SharpIDE.Application.Features.SolutionDiscovery.VsPersistence;
 
 namespace SharpIDE.Application.Features.FileWatching;
 

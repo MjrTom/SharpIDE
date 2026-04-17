@@ -1,9 +1,7 @@
 ﻿using System.Collections.Immutable;
 using Microsoft.CodeAnalysis.Razor.Utilities;
 using Microsoft.CodeAnalysis.Shared.TestHooks;
-using Microsoft.VisualStudio.SolutionPersistence.Model;
 using SharpIDE.Application.Features.Analysis;
-using SharpIDE.Application.Features.Evaluation;
 using SharpIDE.Application.Features.Events;
 using SharpIDE.Application.Features.FilePersistence;
 using SharpIDE.Application.Features.SolutionDiscovery;

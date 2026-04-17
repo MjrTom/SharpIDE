@@ -1,7 +1,6 @@
 ﻿using System.Collections.Immutable;
 using SharpIDE.Application.Features.Debugging;
 using SharpIDE.Application.Features.SolutionDiscovery;
-using SharpIDE.Application.Features.SolutionDiscovery.VsPersistence;
 
 namespace SharpIDE.Application.Features.Events;
 

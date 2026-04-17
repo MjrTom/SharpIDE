@@ -3,7 +3,6 @@ using NuGet.Versioning;
 using SharpIDE.Application.Features.Evaluation;
 using SharpIDE.Application.Features.Nuget;
 using SharpIDE.Application.Features.SolutionDiscovery;
-using SharpIDE.Application.Features.SolutionDiscovery.VsPersistence;
 using SharpIDE.Godot.Features.Problems;
 
 namespace SharpIDE.Godot.Features.Nuget;

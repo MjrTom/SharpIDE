@@ -1,7 +1,5 @@
 ﻿using Godot;
 using Microsoft.CodeAnalysis.Completion;
-using Microsoft.CodeAnalysis.Text;
-using SharpIDE.Godot.Features.Problems;
 
 namespace SharpIDE.Godot.Features.CodeEditor;
 

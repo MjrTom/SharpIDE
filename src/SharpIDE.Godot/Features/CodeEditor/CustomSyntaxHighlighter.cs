@@ -1,7 +1,6 @@
 ﻿using System.Collections.Immutable;
 using Godot;
 using Godot.Collections;
-using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.Classification;
 using SharpIDE.Application.Features.Analysis;
 using SharpIDE.Application.Features.Analysis.Razor;

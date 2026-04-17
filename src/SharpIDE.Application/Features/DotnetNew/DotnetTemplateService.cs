@@ -1,7 +1,5 @@
-﻿using Microsoft.DotNet.Cli.Commands.New;
-using Microsoft.Extensions.Logging;
+﻿using Microsoft.Extensions.Logging;
 using Microsoft.TemplateEngine.Abstractions;
-using Microsoft.TemplateEngine.Abstractions.TemplatePackage;
 using Microsoft.TemplateEngine.Cli;
 using Microsoft.TemplateEngine.IDE;
 

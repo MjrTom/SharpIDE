@@ -1,5 +1,4 @@
 using Godot;
-using SharpIDE.Application.Features.Analysis;
 using SharpIDE.Application.Features.Search;
 using SharpIDE.Godot.Features.SolutionExplorer;
 

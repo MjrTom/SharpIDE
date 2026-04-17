@@ -8,7 +8,6 @@ using SharpIDE.Application.Features.FilePersistence;
 using SharpIDE.Application.Features.FileSystem;
 using SharpIDE.Application.Features.FileWatching;
 using SharpIDE.Application.Features.NavigationHistory;
-using SharpIDE.Application.Features.Run;
 using SharpIDE.Application.Features.SolutionDiscovery;
 using SharpIDE.Application.Features.SolutionDiscovery.VsPersistence;
 using SharpIDE.Godot.Features.BottomPanel;

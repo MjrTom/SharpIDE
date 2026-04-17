@@ -18,7 +18,6 @@ using SharpIDE.Application.Features.FileWatching;
 using SharpIDE.Application.Features.NavigationHistory;
 using SharpIDE.Application.Features.Run;
 using SharpIDE.Application.Features.SolutionDiscovery;
-using SharpIDE.Application.Features.SolutionDiscovery.VsPersistence;
 using Task = System.Threading.Tasks.Task;
 
 namespace SharpIDE.Godot.Features.CodeEditor;

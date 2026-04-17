@@ -2,8 +2,6 @@
 #nullable enable
 
 using Godot;
-using System;
-using System.Collections.Generic;
 using GDArray = Godot.Collections.Array;
 
 namespace R3;

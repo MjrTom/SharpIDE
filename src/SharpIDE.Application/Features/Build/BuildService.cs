@@ -1,15 +1,10 @@
 using System.Diagnostics;
 using System.IO.Pipelines;
 using System.Net.Sockets;
-using Ardalis.GuardClauses;
-using Microsoft.Build.Execution;
-using Microsoft.Build.Framework;
-using Microsoft.Build.Logging;
 using Microsoft.Extensions.Logging;
 using NeoSmart.AsyncLock;
 using PolyType.SourceGenerator;
 using SharpIDE.Application.Features.Events;
-using SharpIDE.Application.Features.Logging;
 using SharpIDE.MsBuildHost.Contracts;
 using StreamJsonRpc;
 // ReSharper disable InconsistentlySynchronizedField

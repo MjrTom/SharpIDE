@@ -40,7 +40,6 @@ using SharpIDE.Application.Features.Build;
 using SharpIDE.Application.Features.FileSystem;
 using SharpIDE.Application.Features.FileWatching;
 using SharpIDE.Application.Features.SolutionDiscovery;
-using SharpIDE.Application.Features.SolutionDiscovery.VsPersistence;
 using static Roslyn.Utilities.EnumerableExtensions;
 using CodeAction = Microsoft.CodeAnalysis.CodeActions.CodeAction;
 using CompletionItem = Microsoft.CodeAnalysis.Completion.CompletionItem;

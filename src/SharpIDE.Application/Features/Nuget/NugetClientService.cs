@@ -1,11 +1,8 @@
 ﻿using NuGet.Common;
 using NuGet.Configuration;
-using NuGet.Packaging.Core;
 using NuGet.Protocol;
 using NuGet.Protocol.Core.Types;
-using NuGet.Versioning;
 using SharpIDE.Application.Features.Evaluation;
-using SharpIDE.Application.Features.SolutionDiscovery.VsPersistence;
 
 namespace SharpIDE.Application.Features.Nuget;
 

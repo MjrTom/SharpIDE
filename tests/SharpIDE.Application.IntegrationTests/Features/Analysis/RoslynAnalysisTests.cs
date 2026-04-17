@@ -1,10 +1,8 @@
 using System.Diagnostics;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
-using Microsoft.TemplateEngine.Abstractions;
 using SharpIDE.Application.Features.Analysis;
 using SharpIDE.Application.Features.Build;
-using SharpIDE.Application.Features.DotnetNew;
 using SharpIDE.Application.Features.FileSystem;
 using SharpIDE.Application.Features.FileWatching;
 using SharpIDE.Application.Features.SolutionDiscovery.VsPersistence;

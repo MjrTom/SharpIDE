@@ -1,6 +1,5 @@
 ﻿using Godot;
 using SharpIDE.Application.Features.SolutionDiscovery;
-using SharpIDE.Godot.Features.Problems;
 
 namespace SharpIDE.Godot.Features.SolutionExplorer;
 

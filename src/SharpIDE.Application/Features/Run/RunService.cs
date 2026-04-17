@@ -7,11 +7,8 @@ using Microsoft.VisualStudio.Shared.VSCodeDebugProtocol.Messages;
 using SharpIDE.Application.Features.Analysis;
 using SharpIDE.Application.Features.Build;
 using SharpIDE.Application.Features.Debugging;
-using SharpIDE.Application.Features.Evaluation;
 using SharpIDE.Application.Features.Events;
 using SharpIDE.Application.Features.SolutionDiscovery;
-using SharpIDE.Application.Features.SolutionDiscovery.VsPersistence;
-using Breakpoint = SharpIDE.Application.Features.Debugging.Breakpoint;
 
 namespace SharpIDE.Application.Features.Run;
 

@@ -7,7 +7,6 @@ using NuGet.ProjectModel;
 using NuGet.Versioning;
 using SharpIDE.Application.Features.Analysis;
 using SharpIDE.Application.Features.SolutionDiscovery;
-using SharpIDE.Application.Features.SolutionDiscovery.VsPersistence;
 using Project = Microsoft.Build.Evaluation.Project;
 
 namespace SharpIDE.Application.Features.Evaluation;

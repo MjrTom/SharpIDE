@@ -1,7 +1,4 @@
-﻿using System.Diagnostics;
-using Ardalis.GuardClauses;
-using Microsoft.VisualStudio.SolutionPersistence.Model;
-using Microsoft.VisualStudio.SolutionPersistence.Serializer;
+﻿using Microsoft.VisualStudio.SolutionPersistence.Model;
 
 namespace SharpIDE.Application.Features.SolutionDiscovery.VsPersistence;
 

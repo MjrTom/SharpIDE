@@ -2,7 +2,6 @@
 
 using Godot;
 using R3.Collections;
-using System;
 using System.Runtime.CompilerServices;
 
 namespace R3;

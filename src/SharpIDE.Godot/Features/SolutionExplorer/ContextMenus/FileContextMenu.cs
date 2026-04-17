@@ -1,6 +1,5 @@
 ﻿using Godot;
 using SharpIDE.Application.Features.SolutionDiscovery;
-using SharpIDE.Application.Features.SolutionDiscovery.VsPersistence;
 using SharpIDE.Godot.Features.SolutionExplorer.ContextMenus.Dialogs;
 
 namespace SharpIDE.Godot.Features.SolutionExplorer;

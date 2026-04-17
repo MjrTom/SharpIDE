@@ -1,5 +1,3 @@
-using System.Buffers;
-
 namespace SharpIDE.Godot.Features.TerminalBase;
 
 public partial class SharpIdeTerminal

@@ -2,7 +2,6 @@
 using System.Diagnostics.CodeAnalysis;
 using ObservableCollections;
 using R3;
-using SharpIDE.Application.Features.SolutionDiscovery.VsPersistence;
 
 namespace SharpIDE.Application.Features.SolutionDiscovery;
 

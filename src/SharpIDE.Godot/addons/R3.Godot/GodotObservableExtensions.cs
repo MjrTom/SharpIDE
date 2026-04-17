@@ -1,6 +1,4 @@
-﻿using System;
-
-namespace R3;
+﻿namespace R3;
 
 public static class GodotObservableExtensions
 {

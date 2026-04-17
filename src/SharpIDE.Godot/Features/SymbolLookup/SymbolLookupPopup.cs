@@ -1,9 +1,7 @@
 using System.Collections.Immutable;
 using Godot;
 using Microsoft.CodeAnalysis;
-using Microsoft.CodeAnalysis.FindSymbols;
 using SharpIDE.Application.Features.Analysis;
-using SharpIDE.Application.Features.SolutionDiscovery;
 
 namespace SharpIDE.Godot.Features.SymbolLookup;
 

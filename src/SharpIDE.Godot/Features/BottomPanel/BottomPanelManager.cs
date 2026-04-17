@@ -1,7 +1,6 @@
 using Godot;
 using SharpIDE.Application.Features.Events;
 using SharpIDE.Application.Features.SolutionDiscovery;
-using SharpIDE.Application.Features.SolutionDiscovery.VsPersistence;
 using SharpIDE.Godot.Features.Build;
 using SharpIDE.Godot.Features.Debug_;
 using SharpIDE.Godot.Features.IdeDiagnostics;

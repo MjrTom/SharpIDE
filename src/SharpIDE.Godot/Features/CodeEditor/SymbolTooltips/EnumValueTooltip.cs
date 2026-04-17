@@ -1,7 +1,6 @@
 ﻿using Godot;
 
 using Microsoft.CodeAnalysis;
-using Microsoft.CodeAnalysis.Shared.Extensions;
 
 namespace SharpIDE.Godot.Features.CodeEditor;
 

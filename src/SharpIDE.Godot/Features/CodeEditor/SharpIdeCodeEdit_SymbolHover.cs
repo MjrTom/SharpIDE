@@ -1,7 +1,6 @@
 ﻿using Godot;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.Text;
-using Roslyn.Utilities;
 using Timer = Godot.Timer;
 
 namespace SharpIDE.Godot.Features.CodeEditor;

@@ -1,6 +1,4 @@
 using System.Collections.Concurrent;
-using SharpIDE.Application.Features.FileSystem;
-using SharpIDE.Application.Features.SolutionDiscovery.VsPersistence;
 
 namespace SharpIDE.Application.Features.SolutionDiscovery;
 
