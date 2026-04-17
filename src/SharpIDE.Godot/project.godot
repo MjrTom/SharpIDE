@@ -33,6 +33,7 @@ window/energy_saving/keep_screen_on=false
 [dotnet]
 
 project/assembly_name="SharpIDE.Godot"
+project/solution_directory="../../"
 
 [editor_plugins]
 
