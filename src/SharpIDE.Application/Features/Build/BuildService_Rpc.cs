@@ -21,11 +21,8 @@ public partial class BuildService
         using (await _rpcInitLock.LockAsync())
         {
             if (_rpcBuildService is not null) return _rpcBuildService;
-            if (_fillPipeFromLoggerTask is not null)
-                throw new InvalidOperationException(
-                    "Build logger pipe is already open, but RPC service is not initialized. This should never happen.");
-            var sharpIdeMsBuildHostDllPath = Path.Combine(AppContext.BaseDirectory, "SharpIdeMsBuildHost",
-                "SharpIDE.MsBuildHost.dll");
+            if (_fillPipeFromLoggerTask is not null) throw new InvalidOperationException("Build logger pipe is already open, but RPC service is not initialized. This should never happen.");
+            var sharpIdeMsBuildHostDllPath = Path.Combine(AppContext.BaseDirectory, "SharpIdeMsBuildHost", "SharpIDE.MsBuildHost.dll");
             var startupInfo = new ProcessStartInfo
             {
                 FileName = "dotnet",
@@ -40,19 +37,14 @@ public partial class BuildService
             startupInfo.Environment["DOTNET_ROLL_FORWARD_TO_PRERELEASE"] = "1";
             var process = Process.Start(startupInfo);
             if (process is null) throw new InvalidOperationException("Failed to start SharpIDE.MsBuildHost");
-            var handler = new LengthHeaderMessageHandler(process.StandardInput.BaseStream,
-                process.StandardOutput.BaseStream,
-                new NerdbankMessagePackFormatter
-                    { TypeShapeProvider = TypeShapeProvider_SharpIDE_MsBuildHost_Contracts.Default });
+            var handler = new LengthHeaderMessageHandler(process.StandardInput.BaseStream, process.StandardOutput.BaseStream, new NerdbankMessagePackFormatter { TypeShapeProvider = TypeShapeProvider_SharpIDE_MsBuildHost_Contracts.Default });
             var rpc = new JsonRpc(handler);
 
             rpc.StartListening();
 
             var proxy = rpc.Attach<IRpcBuildService>();
             var (rpcBuildHostRuntimeVersion, rpcBuildHostMsBuildPath) = await proxy.GetMsbuildInfoAsync();
-            _logger.LogInformation(
-                "Connected to SharpIDE.MsBuildHost running on '{RpcBuildHostRuntimeVersion}' Runtime with MSBuild from SDK at '{RpcBuildHostMsBuildPath}'",
-                rpcBuildHostRuntimeVersion, rpcBuildHostMsBuildPath);
+            _logger.LogInformation("Connected to SharpIDE.MsBuildHost running on '{RpcBuildHostRuntimeVersion}' Runtime with MSBuild from SDK at '{RpcBuildHostMsBuildPath}'", rpcBuildHostRuntimeVersion, rpcBuildHostMsBuildPath);
             _fillPipeFromLoggerTask = await OpenMsBuildLoggerPipe(proxy);
             _sharpIdeMsBuildHostProcess = process;
             return proxy;
