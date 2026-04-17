@@ -10,4 +10,5 @@ public partial interface IRpcBuildService
 	Task<bool> Ping();
 	Task<(BuildResultDto buildResultDto, Exception? Exception)> MsBuildAsync(string solutionOrProjectFilePath, BuildTypeDto buildType = BuildTypeDto.Build, CancellationToken cancellationToken = default);
 	Task BeginWritingMsBuildOutputToSocket(string unixDomainSocketFilePath);
+	Task<(string RuntimeVersion, string MsBuildSdkPath)> GetMsbuildInfoAsync();
 }

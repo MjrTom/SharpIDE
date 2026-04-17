@@ -62,6 +62,8 @@ public class BuildService(ILogger<BuildService> logger) : IDisposable
 			rpc.StartListening();
 
 			var proxy = rpc.Attach<IRpcBuildService>();
+			var (rpcBuildHostRuntimeVersion, rpcBuildHostMsBuildPath) = await proxy.GetMsbuildInfoAsync();
+			_logger.LogInformation("Connected to SharpIDE.MsBuildHost running on '{RpcBuildHostRuntimeVersion}' Runtime with MSBuild from SDK at '{RpcBuildHostMsBuildPath}'", rpcBuildHostRuntimeVersion, rpcBuildHostMsBuildPath);
 			_fillPipeFromLoggerTask = await OpenMsBuildLoggerPipe(proxy);
 			_sharpIdeMsBuildHostProcess = process;
 			return proxy;

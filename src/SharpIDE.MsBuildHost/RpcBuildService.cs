@@ -1,4 +1,5 @@
 ﻿using System.Net.Sockets;
+using System.Runtime.InteropServices;
 using Ardalis.GuardClauses;
 using Microsoft.Build.Execution;
 using SharpIDE.Application.Features.Build;
@@ -79,6 +80,11 @@ public class RpcBuildService : IRpcBuildService
 			await pipeReader.CompleteAsync();
 			socket.Shutdown(SocketShutdown.Send);
 		});
+	}
+
+	public async Task<(string RuntimeVersion, string MsBuildSdkPath)> GetMsbuildInfoAsync()
+	{
+		return (RuntimeInformation.FrameworkDescription, SharpIdeMsbuildLocator.ResolvedMsBuildSdkPath);
 	}
 
 	private static string[] TargetsToBuild(BuildTypeDto buildType)
