@@ -377,7 +377,9 @@ public partial class RoslynAnalysis(ILogger<RoslynAnalysis> logger, BuildService
 			.Where(d => d.Severity is not DiagnosticSeverity.Hidden)
 			.Select(d =>
 			{
-				var mappedFileLinePositionSpan = d.Location.SourceTree!.GetMappedLineSpan(d.Location.SourceSpan);
+				var mappedFileLinePositionSpan = d.Location.IsInSource
+					? d.Location.SourceTree!.GetMappedLineSpan(d.Location.SourceSpan)
+					: new FileLinePositionSpan(projectModel.FilePath, new LinePositionSpan(LinePosition.Zero, LinePosition.Zero));
 				return new SharpIdeDiagnostic(mappedFileLinePositionSpan.Span, d, mappedFileLinePositionSpan.Path);
 			})
 			.ToImmutableArray();
