@@ -34,7 +34,14 @@ public partial class BuildService
                 CreateNoWindow = true,
                 WindowStyle = ProcessWindowStyle.Hidden
             };
+            var keysToRemove = startupInfo.Environment
+                .Where(s => s.Key.StartsWith("DOTNET_", StringComparison.OrdinalIgnoreCase) || s.Key.StartsWith("MSBuild", StringComparison.OrdinalIgnoreCase))
+                .Where(s => s.Key.Equals("DOTNET_CLI_TELEMETRY_OPTOUT", StringComparison.OrdinalIgnoreCase) is false) // I don't know if this affects anything in MSBuild, but let's propagate it anyway if the user has it set
+                .Select(s => s.Key)
+                .ToList();
+            keysToRemove.ForEach(s => startupInfo.Environment.Remove(s));
             startupInfo.Environment["DOTNET_ROLL_FORWARD_TO_PRERELEASE"] = "1";
+            startupInfo.Environment["DOTNET_ROLL_FORWARD"] = "LatestMajor";
             var process = Process.Start(startupInfo);
             if (process is null) throw new InvalidOperationException("Failed to start SharpIDE.MsBuildHost");
             var handler = new LengthHeaderMessageHandler(process.StandardInput.BaseStream, process.StandardOutput.BaseStream, new NerdbankMessagePackFormatter { TypeShapeProvider = TypeShapeProvider_SharpIDE_MsBuildHost_Contracts.Default });
