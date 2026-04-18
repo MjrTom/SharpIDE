@@ -18,6 +18,7 @@ public partial class BuildService
     private Process? _sharpIdeMsBuildHostProcess;
     private Socket? _buildLogSocket;
 	private readonly AsyncLock _rpcInitLock = new AsyncLock();
+	private bool _rpcDisposing;
 
     private async Task<IRpcBuildService> ConnectRpc(string solutionOrProjectFilePath)
     {
@@ -93,10 +94,15 @@ public partial class BuildService
                 var buffer = new byte[4096];
                 while (true)
                 {
+	                if (_rpcDisposing) break;
                     var bytesRead = await socket.ReceiveAsync(buffer, SocketFlags.None);
                     if (bytesRead == 0) break; // End of stream
                     await pipeWriter.WriteAsync(buffer.AsMemory(0, bytesRead));
                 }
+            }
+            catch when (_rpcDisposing)
+            {
+	            // Socket is being closed
             }
             catch (Exception ex)
             {
@@ -105,11 +111,20 @@ public partial class BuildService
             finally
             {
                 await pipeWriter.CompleteAsync();
-                socket.Dispose();
             }
         });
         BuildLogPipeReader = pipeReader;
         _buildLogSocket = socket;
         return fillPipeTask;
+    }
+
+    public void Dispose()
+    {
+	    _rpcDisposing = true;
+	    _cancellationTokenSource?.Cancel();
+	    _buildLogSocket?.Shutdown(SocketShutdown.Both);
+	    _buildLogSocket?.Close(0);
+	    _sharpIdeMsBuildHostProcess?.Kill(entireProcessTree: true);
+	    _sharpIdeMsBuildHostProcess?.Dispose();
     }
 }

@@ -67,13 +67,4 @@ public partial class BuildService(ILogger<BuildService> logger) : IDisposable
 		await _cancellationTokenSource.CancelAsync();
 		_cancellationTokenSource = null;
 	}
-
-	public void Dispose()
-	{
-		_cancellationTokenSource?.Cancel();
-		_buildLogSocket?.Shutdown(SocketShutdown.Both);
-		_buildLogSocket?.Close(0);
-		_sharpIdeMsBuildHostProcess?.Kill(entireProcessTree: true);
-		_sharpIdeMsBuildHostProcess?.Dispose();
-	}
 }
