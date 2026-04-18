@@ -40,8 +40,13 @@
 
     <!-- TODO: Not working for publish -->
     <Target Name="CopyBuildHostOutputToOutput" AfterTargets="Build">
+        <PropertyGroup>
+            <!-- Godot publishes for a specific RID, e.g. '-r win-x64' which affects the output folder of the BuildHost project. -->
+            <BuildHostFilesFolderName Condition="'$(RuntimeIdentifier)' != ''">$(Configuration)_$(RuntimeIdentifier)</BuildHostFilesFolderName>
+            <BuildHostFilesFolderName Condition="'$(RuntimeIdentifier)' == ''">$(Configuration)</BuildHostFilesFolderName>
+        </PropertyGroup>
         <ItemGroup>
-            <BuildHostFiles Include="$(ArtifactsPath)\bin\SharpIDE.MsBuildHost\$(Configuration)\**\*.*" />
+            <BuildHostFiles Include="$(ArtifactsPath)\bin\SharpIDE.MsBuildHost\$(BuildHostFilesFolderName)\**\*.*" />
         </ItemGroup>
 
         <MakeDir Directories="$(OutputPath)SharpIdeMsBuildHost" />
@@ -53,5 +58,15 @@
 
     <Target Name="CleanBuildHostOutput" AfterTargets="Clean">
         <RemoveDir Directories="$(OutputPath)SharpIdeMsBuildHost" />
+    </Target>
+
+    <Target Name="CopyBuildToPublish" AfterTargets="Publish">
+        <ItemGroup>
+            <BuildHostFiles Include="$(OutputPath)SharpIdeMsBuildHost\**\*.*" />
+        </ItemGroup>
+        <MakeDir Directories="$(PublishDir)SharpIdeMsBuildHost" />
+        <Copy SourceFiles="@(BuildHostFiles)"
+              DestinationFiles="@(BuildHostFiles->'$(PublishDir)SharpIdeMsBuildHost\%(RecursiveDir)%(Filename)%(Extension)')"
+              SkipUnchangedFiles="true" />
     </Target>
 </Project>
