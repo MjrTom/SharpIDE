@@ -38,12 +38,12 @@
     <Content Include="Properties\launchSettings.json" />
   </ItemGroup>
 
-    <!-- TODO: Not working for publish -->
     <Target Name="CopyBuildHostOutputToOutput" AfterTargets="Build">
         <PropertyGroup>
             <!-- Godot publishes for a specific RID, e.g. '-r win-x64' which affects the output folder of the BuildHost project. -->
             <BuildHostFilesFolderName Condition="'$(RuntimeIdentifier)' != ''">$(Configuration)_$(RuntimeIdentifier)</BuildHostFilesFolderName>
             <BuildHostFilesFolderName Condition="'$(RuntimeIdentifier)' == ''">$(Configuration)</BuildHostFilesFolderName>
+            <BuildHostFilesFolderName>$([System.String]::Copy('$(BuildHostFilesFolderName)').ToLowerInvariant())</BuildHostFilesFolderName>
         </PropertyGroup>
         <ItemGroup>
             <BuildHostFiles Include="$(ArtifactsPath)\bin\SharpIDE.MsBuildHost\$(BuildHostFilesFolderName)\**\*.*" />
