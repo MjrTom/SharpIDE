@@ -19,8 +19,8 @@
     <PackageVersion Include="LibGit2Sharp" Version="0.31.0" />
     <PackageVersion Include="Microsoft.AspNetCore.Components" Version="10.0.5" />
     <PackageVersion Include="Microsoft.AspNetCore.Components.WebView" Version="10.0.5" />
-    <PackageVersion Include="Microsoft.Build" Version="18.7.0-preview-26216-01" />
-    <PackageVersion Include="Microsoft.Build.Framework" Version="18.7.0-preview-26216-01" />
+    <PackageVersion Include="Microsoft.Build" Version="18.7.0-preview-26217-02" />
+    <PackageVersion Include="Microsoft.Build.Framework" Version="18.7.0-preview-26217-02" />
     <PackageVersion Include="Microsoft.Build.Locator" Version="1.10.12" />
     <PackageVersion Include="Microsoft.Build.Tasks.Core" Version="18.7.0-preview-26216-01" />
     <PackageVersion Include="Microsoft.Build.Utilities.Core" Version="18.7.0-preview-26216-01" />
